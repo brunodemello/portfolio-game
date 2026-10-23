@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Bruno de Mello — a carreira como um jogo</title>
+  <meta name="description" content="Tech Lead e desenvolvedor full stack com 11 anos de web. Atravesse a trajetória de Bruno de Mello num side-scroller em que o cenário e o personagem evoluem junto com a carreira.">
+  <meta name="theme-color" content="#0b0a18">
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="canonical" href="https://brunodemello.dev/portfolio-game-v2/">
+  <link rel="alternate" hreflang="pt-BR" href="https://brunodemello.dev/portfolio-game-v2/">
+  <link rel="alternate" hreflang="en" href="https://brunodemello.dev/portfolio-game-v2/en/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Bruno de Mello — a carreira como um jogo">
+  <meta property="og:description" content="Tech Lead e desenvolvedor full stack. Atravesse 11 anos de carreira num jogo 2D e colete as skills pelo caminho.">
+  <meta property="og:url" content="https://brunodemello.dev/portfolio-game-v2/">
+  <meta property="og:image" content="https://brunodemello.dev/portfolio-game-v2/share-pt.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Bruno de Mello em pixel art diante do escritório, ao fim de uma rua que atravessa a carreira.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;700&family=VT323&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add('js');</script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#text-version">Pular o jogo e ler o currículo</a>
+
+  <div id="app">
+    <canvas id="screen" aria-hidden="true"></canvas>
+    <div id="billboards" aria-hidden="true"></div>
+
+    <header class="hud-top">
+      <div class="hud-id">
+        <span class="hud-name">BRUNO DE MELLO</span>
+        <span class="hud-year"><i id="year-prefix">ANO </i><b id="year">2013</b></span>
+      </div>
+      <div class="era-badge" id="era-badge">
+        <span id="era-name">FACULDADE</span>
+        <small id="era-spec">Unesp Bauru</small>
+      </div>
+      <div class="hud-actions">
+        <button type="button" data-panel="vagas">Currículo</button>
+        <button type="button" data-panel="projetos" class="accent"><span class="long">Tenho um projeto</span><span class="short">Projeto</span></button>
+        <button type="button" id="sound" aria-pressed="false" title="Som">♪ <span>OFF</span></button>
+        <a class="lang" href="en/" hreflang="en" lang="en" title="English version">EN</a>
+      </div>
+    </header>
+
+    <nav class="timeline" id="timeline" aria-label="Linha do tempo">
+      <div class="timeline-track"><div class="timeline-fill" id="timeline-fill"></div></div>
+      <div class="timeline-stops" id="timeline-stops"></div>
+    </nav>
+
+    <button type="button" class="skill-orb" id="skill-orb" aria-label="Abrir roda de skills">
+      <span class="orb-ring"></span>
+      <span class="orb-core"><b id="skill-count">0</b><small>SKILLS</small></span>
+      <span class="orb-key">K</span>
+    </button>
+    <div class="skill-pops" id="skill-pops" aria-hidden="true"></div>
+
+    <div class="hint" id="hint" hidden>
+      <span class="hint-keys"><kbd>←</kbd><kbd>→</kbd> andar &nbsp;<kbd>Shift</kbd> correr &nbsp;<kbd>↑</kbd> pular</span>
+      <span class="hint-touch">Deslize ou use os botões para andar</span>
+      <span class="hint-scroll">…ou só role a página. Pare perto dos telões para ler mais.</span>
+    </div>
+
+    <div class="door-prompts" id="door-prompts" hidden>
+      <button type="button" class="door-prompt" data-door="vagas">▲ VAGAS</button>
+      <button type="button" class="door-prompt" data-door="projetos">▲ PROJETOS</button>
+    </div>
+    <div class="era-banner" id="era-banner" hidden></div>
+    <div class="flash" id="flash"></div>
+
+    <div class="touch-controls" id="touch-controls">
+      <button type="button" data-hold="left" aria-label="Andar para a esquerda">◀</button>
+      <button type="button" data-hold="right" aria-label="Andar para a direita">▶</button>
+      <button type="button" data-tap="jump" class="jump" aria-label="Pular">▲</button>
+    </div>
+
+    <section class="title-screen" id="title-screen">
+      <div class="boot" id="boot">brunodemello<span>.dev</span></div>
+      <div class="title-card">
+        <p class="title-kicker">UMA CARREIRA EM 5 CAPÍTULOS</p>
+        <h1 class="title-logo">BRUNO<br>DE MELLO</h1>
+        <p class="title-sub">Tech Lead · Full Stack · IA</p>
+        <button type="button" class="start" id="continue" hidden>▶ CONTINUAR</button>
+        <button type="button" class="start" id="start">▶ PRESS START</button>
+        <div class="title-links">
+          <button type="button" data-panel="vagas">Ver currículo</button>
+          <button type="button" data-panel="projetos">Tenho um projeto</button>
+          <a class="lang" href="en/" hreflang="en" lang="en">English</a>
+        </div>
+        <p class="title-help">Enter, toque ou role para começar</p>
+      </div>
+    </section>
+  </div>
+
+  <!--
+    Fonte única do conteúdo. O jogo lê estes artigos (data-x = posição no mundo)
+    e quem não roda JavaScript, buscadores e leitores de tela leem o texto direto.
+  -->
+  <main id="text-version">
+    <h1>Bruno de Mello · Tech Lead e desenvolvedor full stack</h1>
+    <p>11 anos em desenvolvimento web. Tech Lead e responsável pelo setor de desenvolvimento na MktNow, liderando a adoção de IA na agência.</p>
+
+    <article class="station" data-id="unesp" data-x="420" data-label="2013"
+      data-skills="Lógica de programação|Algoritmos">
+      <p class="kicker">2013</p>
+      <h2>Unesp Bauru</h2>
+      <p class="role">Ciência da Computação, depois Sistemas de Informação</p>
+      <p class="body">Onde tudo começou: entrei em Ciência da Computação e depois migrei para Sistemas de Informação, na Unesp de Bauru. Tranquei em 2018 para me dedicar ao trabalho.</p>
+    </article>
+
+    <article class="station" data-id="jrcom" data-x="1000" data-label="2015"
+      data-skills="Gestão de projetos|Liderança|Trabalho em equipe">
+      <p class="kicker">2015 – 2018</p>
+      <h2>Jr.com · Empresa Júnior</h2>
+      <p class="role">Empresa júnior da Computação da Unesp Bauru</p>
+      <ol class="steps"><li>Trainee de projetos</li><li>Diretor de projetos</li><li>Presidente</li></ol>
+      <p class="body">Tirei projetos do papel com clientes de verdade ainda na faculdade. Entrei como trainee, assumi a diretoria de projetos e fui eleito presidente: minha primeira experiência liderando pessoas.</p>
+    </article>
+
+    <article class="station" data-id="i9" data-x="1380"
+      data-skills="HTML|CSS|JavaScript|WordPress">
+      <p class="kicker">2015 – 2017</p>
+      <h2>i9</h2>
+      <p class="role">Estágio em desenvolvimento web</p>
+      <p class="body">Primeiro estágio: desenvolvimento web e WordPress no dia a dia de uma agência. Fiz parte do time que redesenhou o site da Endeavor Brasil.</p>
+    </article>
+
+    <article class="station" data-id="mktnow" data-x="1900" data-label="2018"
+      data-skills="React|Node.js|VTEX|Tray|Loja Integrada|APIs">
+      <p class="kicker">2018</p>
+      <h2>MktNow</h2>
+      <p class="role">Desenvolvedor Sênior · agência de performance digital</p>
+      <p class="body">Interfaces em React, back-end em Node.js, integrações e lojas em VTEX, Tray e Loja Integrada, com deploy e manutenção incluídos. Aqui a web virou trabalho de gente grande.</p>
+    </article>
+
+    <article class="station" data-id="tristar" data-x="2360" data-label="2019"
+      data-skills="PouchDB|Offline-first|Mobile web">
+      <p class="kicker">2019 · freela em paralelo</p>
+      <h2>Tri-Star Premium Services</h2>
+      <p class="role">App de inspeção para a aviação civil</p>
+      <ul class="board"><li><span>VIRACOPOS</span><span>VCP</span><span>EM USO</span></li><li><span>GUARULHOS</span><span>GRU</span><span>EM USO</span></li><li><span>CONGONHAS</span><span>CGH</span><span>EM USO</span></li></ul>
+      <p class="body">App mobile que funciona offline para agentes de proteção da aviação civil checarem itens proibidos no embarque.</p>
+      <p><a class="case" href="/pt/work/tri-star/">Ler o case completo</a></p>
+    </article>
+
+    <article class="station" data-id="email" data-x="2820"
+      data-skills="Coordenação de equipe|E-mail marketing|GTM|GA4">
+      <p class="kicker">Em paralelo ao dev</p>
+      <h2>Coordenação de E-mail Marketing</h2>
+      <p class="role">MktNow · cerca de 2 anos</p>
+      <p class="body">Coordenei o setor de e-mail marketing sem largar o desenvolvimento. Saí do jeito certo: treinei a pessoa que assumiu o setor.</p>
+    </article>
+
+    <article class="station" data-id="techlead" data-x="3420" data-label="2024"
+      data-skills="Arquitetura|Code review|VPS|DNS|Nginx">
+      <p class="kicker">2024</p>
+      <h2>Tech Lead</h2>
+      <p class="role">MktNow · liderança técnica</p>
+      <p class="body">Arquitetura, revisão de código e as decisões que mantêm os projetos de pé, sem sair do código. O time começa a andar junto.</p>
+    </article>
+
+    <article class="station" data-id="dept" data-x="4120" data-label="2026"
+      data-skills="Gestão de time|Priorização|IA aplicada|Agentes de IA">
+      <p class="kicker">2026</p>
+      <h2>Responsável pelo Desenvolvimento</h2>
+      <p class="role">MktNow · todo o setor de dev</p>
+      <p class="body">Lidero um time de 5 a 6 devs: conduzo as dailies, priorizo e distribuo as tarefas e sou o ponto único entre a agência e o desenvolvimento.</p>
+      <p class="body">Também lidero a adoção de IA na agência, criando ferramentas internas e levando IA para o fluxo de trabalho.</p>
+    </article>
+
+    <article class="station" data-id="personal" data-x="4340"
+      data-skills="Next.js|TypeScript|Prisma|PostgreSQL|Python">
+      <p class="kicker">Projetos pessoais</p>
+      <h2>CareerOS e ClearDesk</h2>
+      <p class="role">Produtos que construo de ponta a ponta</p>
+      <figure class="shots"><img src="/assets/careeros-demo.jpg" alt="CareerOS com uma oportunidade de demonstração e o cálculo de aderência"><img src="/assets/cleardesk-pipeline.jpg" alt="ClearDesk: funil do piloto com dados de demonstração"></figure>
+      <p class="body">CareerOS organiza minha trajetória e analisa oportunidades a partir de skills, experiências e evidências de projetos. ClearDesk é o piloto de uma aplicação para organizar contatos comerciais, orçamentos e próximos passos numa operação de serviços.</p>
+      <p><a class="case" href="/pt/work/careeros/">Case do CareerOS</a> <a class="case" href="/pt/work/cleardesk/">Case do ClearDesk</a></p>
+    </article>
+
+    <article class="station" data-id="urbes" data-x="4540"
+      data-skills="SQLite|Diagnóstico de dados">
+      <p class="kicker">Freela</p>
+      <h2>URBES</h2>
+      <p class="role">Manutenção de aplicação Node.js + SQLite</p>
+      <p class="body">Fluxo de atualização de dados por arquivos e investigação de consistência entre arquivo, banco e interface.</p>
+      <p><a class="case" href="/pt/work/urbes/">Ler o case completo</a></p>
+    </article>
+
+    <article class="station" data-id="labs" data-x="4860"
+      data-skills="Orquestração de agentes|Automação">
+      <p class="kicker">Estudo pessoal</p>
+      <h2>Labs</h2>
+      <p class="role">Laboratório de agentes de IA</p>
+      <p class="body">Um time de agentes com papéis definidos (design, front, back, QA, documentação) trabalhando num fluxo de tarefas com revisão humana no final. Um estudo sobre como agentes podem construir software com qualidade.</p>
+      <p><a class="case" href="/pt/work/dunder-labs/">Ler o case completo</a></p>
+    </article>
+
+    <article class="station" data-id="office" data-x="5260" data-label="Hoje">
+      <p class="kicker">Hoje</p>
+      <h2>E agora?</h2>
+      <p class="role">Duas portas, dois caminhos</p>
+      <p class="body">Procurando alguém para o seu time? Porta da esquerda. Tem um projeto para tirar do papel? Porta da direita.</p>
+    </article>
+    <section class="skills-data" id="skills-data">
+      <h2>Skills</h2>
+      <ul>
+      <li data-skill="Lógica de programação" data-code="LOG" data-group="fund"><b>Lógica de programação</b> A base da Ciência da Computação na Unesp, onde comecei em 2013.</li>
+      <li data-skill="Algoritmos" data-code="ALG" data-group="fund"><b>Algoritmos</b> Estruturas e algoritmos da graduação: o raciocínio que sigo usando para resolver problemas.</li>
+      <li data-skill="Gestão de projetos" data-code="GP" data-group="lead"><b>Gestão de projetos</b> Na Jr.com, de trainee a diretor de projetos: escopo, prazos e clientes reais ainda na faculdade.</li>
+      <li data-skill="Liderança" data-code="LID" data-group="lead"><b>Liderança</b> Presidente da Jr.com e, anos depois, Tech Lead e responsável pelo desenvolvimento da MktNow.</li>
+      <li data-skill="Trabalho em equipe" data-code="EQP" data-group="lead"><b>Trabalho em equipe</b> Da empresa júnior ao time que coordeno hoje: projetos sempre feitos a várias mãos.</li>
+      <li data-skill="HTML" data-code="HTML" data-group="front"><b>HTML</b> Base de tudo o que construo para a web, desde o primeiro estágio na i9.</li>
+      <li data-skill="CSS" data-code="CSS" data-group="front"><b>CSS</b> Layouts responsivos com CSS e SCSS, adaptando interfaces a qualquer tela.</li>
+      <li data-skill="JavaScript" data-code="JS" data-group="front"><b>JavaScript</b> A linguagem central do meu trabalho: do estágio na i9 às aplicações em React e Node.js.</li>
+      <li data-skill="WordPress" data-code="WP" data-group="front"><b>WordPress</b> Sites institucionais desde a i9, incluindo o redesign da Endeavor Brasil, e muitos projetos de agência.</li>
+      <li data-skill="React" data-code="RCT" data-group="front"><b>React</b> Interfaces que construo e mantenho na MktNow desde 2018.</li>
+      <li data-skill="Node.js" data-code="NODE" data-group="back"><b>Node.js</b> Back-ends, APIs e integrações na MktNow, além da aplicação da URBES.</li>
+      <li data-skill="VTEX" data-code="VTEX" data-group="ecom"><b>VTEX</b> Lojas e integrações de e-commerce para clientes da agência.</li>
+      <li data-skill="Tray" data-code="TRAY" data-group="ecom"><b>Tray</b> Lojas Tray com regras específicas da operação de cada cliente.</li>
+      <li data-skill="Loja Integrada" data-code="LI" data-group="ecom"><b>Loja Integrada</b> E-commerce de clientes da agência, com integrações e ajustes de operação.</li>
+      <li data-skill="APIs" data-code="API" data-group="back"><b>APIs</b> Integrações entre serviços, formulários e CRMs, com as regras de negócio de cada cliente.</li>
+      <li data-skill="PouchDB" data-code="PDB" data-group="back"><b>PouchDB</b> O banco local do app da Tri-Star, que precisava funcionar sem internet nos aeroportos.</li>
+      <li data-skill="Offline-first" data-code="OFF" data-group="back"><b>Offline-first</b> No app da Tri-Star, os agentes checavam itens mesmo sem conexão, e os dados sincronizavam depois.</li>
+      <li data-skill="Mobile web" data-code="MOB" data-group="front"><b>Mobile web</b> O app de inspeção da Tri-Star, usado no celular por agentes de proteção da aviação civil.</li>
+      <li data-skill="Coordenação de equipe" data-code="CRD" data-group="lead"><b>Coordenação de equipe</b> Coordenei o setor de e-mail marketing por cerca de dois anos, junto com o desenvolvimento.</li>
+      <li data-skill="E-mail marketing" data-code="MAIL" data-group="mkt"><b>E-mail marketing</b> Operação e campanhas do setor na MktNow, até treinar a pessoa que assumiu.</li>
+      <li data-skill="GTM" data-code="GTM" data-group="mkt"><b>GTM</b> Google Tag Manager para medir o que acontece em sites e lojas de clientes.</li>
+      <li data-skill="GA4" data-code="GA4" data-group="mkt"><b>GA4</b> Google Analytics e dataLayer para medir o que importa em cada projeto.</li>
+      <li data-skill="Arquitetura" data-code="ARQ" data-group="back"><b>Arquitetura</b> Como Tech Lead, defino a estrutura e os caminhos técnicos dos projetos da agência.</li>
+      <li data-skill="Code review" data-code="CR" data-group="lead"><b>Code review</b> Revisão de código do time: qualidade e consistência antes de ir para produção.</li>
+      <li data-skill="VPS" data-code="VPS" data-group="infra"><b>VPS</b> Publicação e manutenção de aplicações em VPS, com aaPanel, DigitalOcean e Hostinger.</li>
+      <li data-skill="DNS" data-code="DNS" data-group="infra"><b>DNS</b> Domínios, DNS, HTTPS e Cloudflare para colocar projetos no ar e mantê-los lá.</li>
+      <li data-skill="Nginx" data-code="NGX" data-group="infra"><b>Nginx</b> Servidores web e proxies (Nginx e Apache) nas aplicações que publico.</li>
+      <li data-skill="Gestão de time" data-code="TIME" data-group="lead"><b>Gestão de time</b> Lidero de 5 a 6 devs: dailies, acompanhamento e distribuição do trabalho.</li>
+      <li data-skill="Priorização" data-code="PRI" data-group="lead"><b>Priorização</b> Decido o que entra primeiro e sou o ponto único entre a agência e o time de desenvolvimento.</li>
+      <li data-skill="IA aplicada" data-code="IA" data-group="ai"><b>IA aplicada</b> Lidero a adoção de IA na agência, com ferramentas internas e IA no fluxo de trabalho.</li>
+      <li data-skill="Agentes de IA" data-code="AGT" data-group="ai"><b>Agentes de IA</b> Uso agentes no desenvolvimento e estudo como eles podem construir software com qualidade.</li>
+      <li data-skill="SQLite" data-code="SQL" data-group="back"><b>SQLite</b> O banco da aplicação da URBES, onde investiguei a consistência entre arquivos, banco e interface.</li>
+      <li data-skill="Diagnóstico de dados" data-code="DIAG" data-group="back"><b>Diagnóstico de dados</b> Rastrear onde o dado se perde: do arquivo de atualização até o que aparece na tela.</li>
+      <li data-skill="Orquestração de agentes" data-code="ORQ" data-group="ai"><b>Orquestração de agentes</b> No Labs, organizo um time de agentes com papéis definidos e revisão humana no final.</li>
+      <li data-skill="Automação" data-code="AUTO" data-group="ai"><b>Automação</b> Fluxos automáticos de tarefas e entregas no meu laboratório de agentes.</li>
+      <li data-skill="Next.js" data-code="NEXT" data-group="front"><b>Next.js</b> A base do CareerOS, meu projeto pessoal para organizar trajetória e oportunidades.</li>
+      <li data-skill="TypeScript" data-code="TS" data-group="front"><b>TypeScript</b> Tipagem do CareerOS de ponta a ponta, do front-end ao banco.</li>
+      <li data-skill="Prisma" data-code="PRSM" data-group="back"><b>Prisma</b> A camada de dados do CareerOS, modelando skills, experiências e evidências.</li>
+      <li data-skill="PostgreSQL" data-code="PG" data-group="back"><b>PostgreSQL</b> O banco relacional por trás do CareerOS.</li>
+      <li data-skill="Python" data-code="PY" data-group="back"><b>Python</b> A aplicação do ClearDesk, piloto para organizar pedidos e orçamentos de uma operação de serviços.</li>
+      </ul>
+    </section>
+  </main>
+
+  <dialog class="wheel" id="skill-wheel" aria-labelledby="wheel-name">
+    <div class="wheel-stage">
+      <div class="wheel-ring" id="wheel-ring"></div>
+      <div class="wheel-center">
+        <p class="wheel-group" id="wheel-group"></p>
+        <h2 class="wheel-name" id="wheel-name"></h2>
+        <p class="wheel-desc" id="wheel-desc"></p>
+        <p class="wheel-origin" id="wheel-origin"></p>
+        <div class="wheel-nav">
+          <button type="button" id="wheel-prev" aria-label="Skill anterior">◀</button>
+          <span id="wheel-progress"></span>
+          <button type="button" id="wheel-next" aria-label="Próxima skill">▶</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="wheel-close" data-close-wheel>Voltar ao jogo ✕</button>
+    <p class="wheel-help">← → ou role para girar · clique numa skill · Esc fecha</p>
+  </dialog>
+
+  <dialog class="panel" id="panel-vagas" aria-labelledby="vagas-title">
+    <div class="panel-inner">
+      <button type="button" class="panel-close" data-close>Voltar ao jogo ✕</button>
+      <p class="panel-kicker">PORTA DA ESQUERDA · VAGAS</p>
+      <h2 id="vagas-title">Para o seu time</h2>
+      <p class="panel-lead">Tech Lead e responsável pelo desenvolvimento na MktNow, agência de performance digital. São 11 anos construindo para a web, de interfaces em React a integrações, e-commerce e infraestrutura. Hoje também lidero a adoção de IA na agência.</p>
+      <div class="panel-actions">
+        <a class="btn primary" href="/pt/resume/">Currículo completo</a>
+        <a class="btn" href="/downloads/bruno-de-mello-pt.pdf" download>Baixar PDF</a>
+        <a class="btn" href="mailto:contact@brunodemello.dev?subject=Vaga">contact@brunodemello.dev</a>
+      </div>
+      <h3>Experiência</h3>
+      <ul class="cv">
+        <li><b>MktNow</b><span>2018 – hoje</span><p>Responsável pelo Desenvolvimento (2026) · Tech Lead (2024) · Dev Sênior (2018). Coordenação de e-mail marketing em paralelo, por cerca de 2 anos.</p></li>
+        <li><b>Tri-Star Premium Services</b><span>2019 · freela</span><p>App offline de inspeção usado em Viracopos, Guarulhos e Congonhas.</p></li>
+        <li><b>URBES</b><span>freela</span><p>Manutenção de aplicação Node.js + SQLite.</p></li>
+        <li><b>i9</b><span>2015 – 2017</span><p>Estágio em desenvolvimento web e WordPress; redesign do site da Endeavor Brasil.</p></li>
+        <li><b>Jr.com</b><span>2015 – 2018</span><p>Trainee de projetos → Diretor de projetos → Presidente.</p></li>
+      </ul>
+      <h3>Formação e idiomas</h3>
+      <p>Unesp Bauru · Ciência da Computação → Sistemas de Informação (2013–2018, não concluído).<br>Inglês intermediário-avançado: leitura e escrita fluentes, conversação em evolução.</p>
+      <h3>Projetos pessoais</h3>
+      <ul class="links">
+        <li><a href="/pt/work/careeros/">CareerOS</a> organiza trajetória e oportunidades</li>
+        <li><a href="/pt/work/cleardesk/">ClearDesk</a> do pedido ao acompanhamento</li>
+        <li><a href="/pt/work/dunder-labs/">Labs</a> laboratório de agentes de IA</li>
+      </ul>
+    </div>
+  </dialog>
+
+  <dialog class="panel" id="panel-projetos" aria-labelledby="projetos-title">
+    <div class="panel-inner">
+      <button type="button" class="panel-close" data-close>Voltar ao jogo ✕</button>
+      <p class="panel-kicker">PORTA DA DIREITA · PROJETOS</p>
+      <h2 id="projetos-title">Tem um projeto?</h2>
+      <p class="panel-lead">Eu cuido da parte técnica de ponta a ponta, com a experiência de quem entrega para clientes de agência todos os dias.</p>
+      <ul class="services">
+        <li><b>Sites e landing pages</b>rápidos, medidos e fáceis de manter</li>
+        <li><b>E-commerce</b>VTEX, Tray, Loja Integrada e WooCommerce</li>
+        <li><b>Apps web sob medida</b>React e Node.js</li>
+        <li><b>Integrações</b>formulário → CRM, APIs e automações</li>
+        <li><b>Ferramentas com IA</b>automações e assistentes para o seu fluxo</li>
+        <li><b>Manutenção e infraestrutura</b>VPS, DNS, deploy e correções</li>
+        <li><b>Medição</b>GTM, GA4 e dataLayer</li>
+      </ul>
+      <p class="panel-note">Projeto fechado para entregas ou mensalidade para manutenção. Orçamento sob medida. <b>Agenda limitada: aceitando novos projetos.</b></p>
+      <div class="panel-actions">
+        <a class="btn primary" href="mailto:contact@brunodemello.dev?subject=Projeto">Pedir orçamento</a>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>
