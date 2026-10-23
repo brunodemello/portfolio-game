@@ -38,7 +38,7 @@ export const TEAM = [
   { board: 'dept', spots: [4120, 4120], door: true },
 ];
 
-const YEAR_KEYS = [[0, 2013], [760, 2015], [1640, 2018], [2360, 2019], [2820, 2021], [3150, 2024], [3700, 2025], [3820, 2026]];
+const YEAR_KEYS = [[0, 2013], [440, 2013.6], [760, 2015], [1640, 2018], [2340, 2019], [2820, 2021], [3150, 2024], [3700, 2025], [3820, 2026]];
 const TODAY_X = 5100;
 
 // Calendar year at a position, as a continuous value (2018.5 = halfway through 2018).

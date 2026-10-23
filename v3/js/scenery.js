@@ -15,7 +15,7 @@ const BUILDING = {
 };
 
 // Half widths keep street props away from the buildings.
-const HALF = { personal: 82, unesp: 134, jrcom: 78, i9: 58, mktnow: 104, tristar: 128, email: 72, techlead: 88, dept: 114, urbes: 52, labs: 64, office: 154 };
+const HALF = { fitfood: 40, personal: 82, unesp: 134, jrcom: 78, i9: 58, mktnow: 104, tristar: 128, email: 72, techlead: 88, dept: 114, urbes: 52, labs: 64, office: 154 };
 
 // Door centers of bld-office relative to the station, from the art manifest.
 export const DOOR_OFFSETS = { vagas: -53.5, projetos: 54 };
@@ -477,6 +477,36 @@ function screen(name) {
 }
 
 const OVERLAYS = {
+  // A totem scanning a nutrition table: the OCR automation on an e-commerce catalog.
+  fitfood(P, era, x, t, world) {
+    const w = 46;
+    const h = 30;
+    const top = BASE - 58;
+    const left = x - w / 2;
+    P.rect(x - 2, top + h, 4, BASE - top - h, '#1b1f33');
+    P.rect(x - 9, BASE - 3, 18, 3, '#1b1f33');
+    P.rect(left - 2.5, top - 2.5, w + 5, h + 5, '#141826');
+    P.rect(left - 2.5, top - 2.5, w + 5, 0.9, '#8dff8a');
+    P.rect(left, top, w, h, '#16241d');
+    // The label being read, with a scan line sweeping down it.
+    P.rect(left + 2, top + 2.5, 17, 25, '#f4efe4');
+    for (let r = 0; r < 7; r++) {
+      P.rect(left + 3.5, top + 4.5 + r * 3.2, r ? 8 + (r % 3) * 1.6 : 13, 0.9, '#3b3b3b');
+      if (r) P.rect(left + 15, top + 4.5 + r * 3.2, 2.6, 0.9, '#3b3b3b');
+    }
+    const sweep = (t * 9) % 23;
+    P.ctx.save();
+    P.ctx.globalAlpha = 0.75;
+    P.rect(left + 1, top + 3 + sweep, 19, 0.8, '#8dff8a');
+    P.ctx.restore();
+    // What comes out: lines of JSON and the count of tables found.
+    for (let r = 0; r < 4; r++) P.rect(left + 23, top + 4 + r * 3.4, 6 + hash(r + 7) * 14, 1, r % 2 ? '#8dff8a' : '#5fd0ff');
+    P.label('305/566', left + 22, top + h - 10, 22, 6, '#8dff8a');
+    P.rect(x - 15, top + h + 3.5, 30, 5.5, '#141826');
+    P.label('OCR', x - 15, top + h + 3.5, 30, 5.5, '#b6ffb0');
+    if (era.detail >= 3) world.lights.push({ x, y: top + h / 2, r: 50, color: '141,255,138', a: 0.35 });
+  },
+
   // Two digital totems showing CareerOS and ClearDesk.
   personal(P, era, x, t, world) {
     [['careeros', 'CAREEROS', -34], ['cleardesk', 'CLEARDESK', 34]].forEach(([name, label, dx], i) => {

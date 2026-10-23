@@ -1014,10 +1014,12 @@ button.btn { background: rgba(255, 255, 255, 0.06); color: #fff; cursor: pointer
 .services li b { display: block; color: #fff; margin-bottom: 4px; font-family: var(--game); font-size: 17px; }
 .links li { padding: 6px 0; color: #cfc8b9; }
 .works { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-.works a { display: block; height: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 12px; color: #cfc8b9; font-size: 13px; text-decoration: none; }
+.works a, .works .work { display: block; height: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 12px; color: #cfc8b9; font-size: 13px; text-decoration: none; }
+.panel-seek { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: rgba(255, 255, 255, 0.04); color: #d9d2c4; font-size: 14px; }
+.panel-seek b { color: var(--accent); }
 .works a:hover { border-color: var(--accent); background: rgba(255, 255, 255, 0.04); }
 .works b { display: block; margin-bottom: 2px; color: var(--accent); font-family: var(--game); font-size: 16px; }
-.works b::after { content: ' →'; }
+.works a b::after { content: ' →'; }
 .process { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
 .process li { padding: 10px 12px; background: rgba(255, 255, 255, 0.04); border-radius: 12px; color: #cfc8b9; font-size: 13px; counter-increment: step; }
 .process b { display: block; margin-bottom: 2px; color: #fff; font-family: var(--game); font-size: 16px; }
