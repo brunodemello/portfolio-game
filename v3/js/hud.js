@@ -107,6 +107,8 @@ export class Hud {
   // ---------- billboards ----------
 
   buildBillboards() {
+    // A ladder already shown on an earlier billboard comes back compact (dots + current role).
+    const ladders = new Set();
     for (const st of this.stations) {
       const era = ERAS[eraIndexAt(st.x)];
       const root = el('div', `bb bb--${era.id}${st.secret ? ' bb--secret' : ''}`);
@@ -118,6 +120,12 @@ export class Hud {
       if (st.steps.length) {
         steps = el('ol', 'bb-steps');
         st.steps.forEach((s) => steps.append(el('li', '', s)));
+        const key = st.steps.join('|');
+        if (st.stepsFrom.length && ladders.has(key)) {
+          steps.classList.add('compact');
+          [...steps.children].forEach((li) => (li.title = li.textContent));
+        }
+        ladders.add(key);
         screen.append(steps);
       }
       let board = null;

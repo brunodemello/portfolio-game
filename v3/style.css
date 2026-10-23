@@ -667,6 +667,11 @@ html:not(.js) #app { display: none; }
 .levelup-from { font-family: var(--game); font-size: 16px; color: var(--muted); text-decoration: line-through; opacity: 0.8; }
 .bb-level { display: block; margin-bottom: 6px; font-family: var(--game); font-size: 20px; color: var(--accent); }
 .bb-steps li.now { background: var(--accent); color: #17121f; border-color: transparent; transform: scale(1.05); }
+/* Repeated ladders (after the first billboard that shows it): past and future steps shrink
+   to dots and only the current role stays a label. */
+.bb-steps.compact { align-items: center; }
+.bb-steps.compact li:not(.now) { width: 9px; height: 9px; padding: 0; overflow: hidden; border-radius: 50%; font-size: 0; }
+.bb-steps.compact li.on:not(.now) { background: var(--accent); opacity: 0.8; }
 
 .flash { position: absolute; inset: 0; z-index: 19; background: #fff; opacity: 0; pointer-events: none; }
 .flash.on { animation: flash 0.5s ease-out; }
@@ -995,6 +1000,8 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
   font-family: var(--game);
   font-size: 16px;
 }
+/* <button class="btn"> must not fall back to the browser's light button background. */
+button.btn { background: rgba(255, 255, 255, 0.06); color: #fff; cursor: pointer; }
 .btn.primary { background: var(--accent); color: #17121f; border-color: transparent; font-weight: 700; box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 45%, #000); }
 .btn:hover { filter: brightness(1.1); }
 .cv, .services, .links { margin: 0; padding: 0; list-style: none; }
@@ -1006,6 +1013,16 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
 .services li { padding: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; color: #cfc8b9; font-size: 14px; }
 .services li b { display: block; color: #fff; margin-bottom: 4px; font-family: var(--game); font-size: 17px; }
 .links li { padding: 6px 0; color: #cfc8b9; }
+.works { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.works a { display: block; height: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 12px; color: #cfc8b9; font-size: 13px; text-decoration: none; }
+.works a:hover { border-color: var(--accent); background: rgba(255, 255, 255, 0.04); }
+.works b { display: block; margin-bottom: 2px; color: var(--accent); font-family: var(--game); font-size: 16px; }
+.works b::after { content: ' →'; }
+.process { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.process li { padding: 10px 12px; background: rgba(255, 255, 255, 0.04); border-radius: 12px; color: #cfc8b9; font-size: 13px; counter-increment: step; }
+.process b { display: block; margin-bottom: 2px; color: #fff; font-family: var(--game); font-size: 16px; }
+.process b::before { content: counter(step) '. '; color: var(--accent); }
+@media (max-width: 560px) { .process { grid-template-columns: 1fr; } }
 .links a { color: var(--accent); font-weight: 700; margin-right: 6px; }
 
 /* ---------- responsive ---------- */
