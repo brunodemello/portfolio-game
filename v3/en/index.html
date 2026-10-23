@@ -38,6 +38,7 @@
       <div class="hud-id">
         <span class="hud-name">BRUNO DE MELLO</span>
         <span class="hud-level"><i id="level-label">LEVEL</i> <b id="level">1</b><span class="level-bar"><span id="level-fill"></span></span></span>
+        <span class="hud-team" hidden><i id="team-label">TEAM</i> <b id="team">0</b></span>
         <span class="hud-year"><i id="year-prefix">YEAR </i><b id="year">2013</b></span>
       </div>
       <div class="era-badge" id="era-badge">
@@ -63,6 +64,21 @@
       <span class="orb-key">K</span>
     </button>
     <div class="skill-pops" id="skill-pops" aria-hidden="true"></div>
+
+    <div class="watch-bar" id="watch-bar" hidden>
+      <span>▶ WATCH MODE</span>
+      <button type="button" id="watch-stop">Take control</button>
+    </div>
+
+    <aside class="nudge" id="nudge" hidden>
+      <button type="button" class="nudge-close" id="nudge-close" aria-label="Close">✕</button>
+      <small>ENJOYING THE JOURNEY?</small>
+      <p>No need to reach the end: you can talk to me right now.</p>
+      <div class="nudge-actions">
+        <button type="button" data-panel="vagas">I have a job</button>
+        <button type="button" data-panel="projetos">I have a project</button>
+      </div>
+    </aside>
 
     <div class="hint" id="hint" hidden>
       <span class="hint-keys"><kbd>←</kbd><kbd>→</kbd> walk &nbsp;<kbd>Shift</kbd> run &nbsp;<kbd>↑</kbd> jump</span>
@@ -91,6 +107,7 @@
         <p class="title-sub">Tech Lead · Full Stack · AI</p>
         <button type="button" class="start" id="continue" hidden>▶ CONTINUE</button>
         <button type="button" class="start" id="start">▶ PRESS START</button>
+        <button type="button" class="start-alt" id="watch">▶ WATCH · 2 MIN</button>
         <div class="title-links">
           <button type="button" data-panel="vagas">View résumé</button>
           <button type="button" data-panel="projetos">I have a project</button>
@@ -290,6 +307,7 @@
         <a class="btn primary" href="/en/resume/">Full résumé</a>
         <a class="btn" href="/downloads/bruno-de-mello-en.pdf" download>Download PDF</a>
         <a class="btn" href="mailto:contact@brunodemello.dev?subject=Job%20opportunity">contact@brunodemello.dev</a>
+        <button type="button" class="btn" data-copy="contact@brunodemello.dev">Copy e-mail</button>
       </div>
       <h3>Experience</h3>
       <ul class="cv">
@@ -328,7 +346,9 @@
       <p class="panel-note">Fixed-price projects or a monthly maintenance plan. Custom quote. <b>Limited availability: taking new projects.</b></p>
       <div class="panel-actions">
         <a class="btn primary" href="mailto:contact@brunodemello.dev?subject=Project">Request a quote</a>
+        <button type="button" class="btn" data-copy="contact@brunodemello.dev">Copy e-mail</button>
       </div>
+      <p class="panel-mail">Or write directly to <b>contact@brunodemello.dev</b></p>
     </div>
   </dialog>
 </body>

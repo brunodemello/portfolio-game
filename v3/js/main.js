@@ -1,6 +1,6 @@
 // Game loop: input -> player/camera update -> rendering -> HTML overlay.
 
-import { ERAS, VIEW_H, GROUND, START_X, MIN_X, MAX_X, CLASSES, eraIndexAt, followerCountAt, yearAt, levelAt, xpAt, classAt, clamp, hash } from './world.js';
+import { ERAS, VIEW_H, GROUND, START_X, MIN_X, MAX_X, CLASSES, eraIndexAt, TEAM, yearAt, levelAt, xpAt, classAt, clamp, hash } from './world.js';
 import { Painter } from './raster.js';
 import { LOOKS, STAGE_BY_ERA, followerLook, getSprite } from './character.js';
 import { drawSkyLayer, drawBackground, drawForeground, DOOR_OFFSETS, doorRects } from './scenery.js';
@@ -64,7 +64,13 @@ const player = {
   stillTime: 0, auto: null, autoMax: RUN, arrived: false, era: 0,
 };
 const trail = [];
-const followers = [];
+// Every dev of the team, waiting at their spot until their group is recruited.
+// state: wait -> alert ("!") -> run (to their place in line) -> team; home walks back.
+const followers = TEAM.flatMap((g, group) => g.spots.map((spot, k) => ({
+  group, spot, k, x: spot, state: 'wait', t: 0, alpha: g.door ? 0 : 1,
+  phase: 0, facing: -1, jumpY: 0, vy: 0, jumpAt: 0, walking: false,
+})));
+const recruited = TEAM.map(() => false);
 const collected = new Set();
 
 let started = false;
@@ -78,11 +84,12 @@ let shake = 0;
 let lastFrame = performance.now();
 let travelled = 0;
 let hintTimer = 0;
-let followerCount = 0;
 let evolveGlow = 0;
 
 const hud = new Hud(stations, {
   onStart: (resume) => start(resume),
+  onWatch: () => startTour(),
+  onWatchStop: () => stopTour(),
   onReplay: () => replay(),
   onSound: (on) => {
     setSound(on);
@@ -117,6 +124,7 @@ const input = createInput(app, {
   onEscape: () => {},
   onActivity: () => {
     if (!started) start();
+    stopTour();
     player.auto = null;
   },
   onUp: () => {
@@ -134,10 +142,12 @@ const input = createInput(app, {
   },
   onTravel: (deltaPx) => {
     if (!started) start();
+    stopTour();
     travelBy(deltaPx * 0.42, 260);
   },
   onDrag: (deltaCss) => {
     if (!started) start();
+    stopTour();
     travelBy((deltaCss / (unit / dpr)) * 1.4, 300);
   },
   onKonami: () => {
@@ -194,11 +204,12 @@ addEventListener('pagehide', () => started && writeSave());
 document.addEventListener('visibilitychange', () => document.hidden && started && writeSave());
 
 // resume: pick up a saved journey when there is one (the "new journey" button passes false).
-function start(resume = true) {
+// keepSave: start from the beginning without erasing the saved journey (watch mode).
+function start(resume = true, keepSave = false) {
   if (started) return;
   started = true;
   if (resume && saved) restore(saved);
-  else {
+  else if (!keepSave) {
     try {
       localStorage.removeItem(SAVE_KEY);
     } catch {
@@ -232,6 +243,68 @@ function replay() {
   camX = START_X - 120;
   trail.length = 0;
   hud.flash();
+}
+
+// ---------- watch mode ----------
+// Bruno walks the whole road on his own and stops at every billboard long enough to read
+// it, level-ups and the team included. Any input (keys, scroll, drag) hands control back.
+const TOUR_SPEED = 110;
+let tour = null;
+
+function startTour() {
+  start(false, true);
+  tour = { stops: stations.filter((s) => !s.secret).map((s) => s.id), i: 0, wait: 0, readAt: null };
+  hud.watching(true);
+  hud.hint(false);
+  hintTimer = -1;
+  nextStop();
+}
+
+function nextStop() {
+  const st = byId[tour.stops[tour.i]];
+  player.auto = clamp(st.x - 18, MIN_X, MAX_X);
+  player.autoMax = TOUR_SPEED;
+  tour.wait = 0;
+  tour.readAt = null;
+}
+
+function stopTour() {
+  if (!tour) return;
+  tour = null;
+  hud.watching(false);
+  player.auto = null;
+}
+
+function updateTour(dt) {
+  if (!tour || hud.panelOpen || levelUp || player.auto !== null) return;
+  const id = tour.stops[tour.i];
+  // The office is the end: its billboard (the character sheet) opens on arrival.
+  if (id === 'office') return stopTour();
+  tour.wait += dt;
+  if (tour.readAt === null && (hud.boardRead(id) || tour.wait > 10)) tour.readAt = tour.wait;
+  if (tour.readAt === null || tour.wait - tour.readAt < 2.4 + byId[id].body.length / 240) return;
+  tour.i++;
+  nextStop();
+}
+
+// Once per visit, after the team joins: no need to reach the end to get in touch.
+// It waits until Bruno walks on, so it never covers the billboard being read.
+let contactPending = false;
+
+function offerContact() {
+  try {
+    if (sessionStorage.getItem('bdm-nudge')) return;
+    sessionStorage.setItem('bdm-nudge', '1');
+  } catch {
+    // Storage blocked: show it anyway, once per page load.
+  }
+  contactPending = true;
+}
+
+function updateContact() {
+  if (!contactPending || openId || hud.panelOpen || levelUp || fastTravel()) return;
+  contactPending = false;
+  hud.nudge(true);
 }
 
 function jump() {
@@ -325,10 +398,13 @@ function update(dt) {
     if (dir) player.arrived = false;
   }
 
-  // Party trail: one point per unit walked, followers read it at fixed distances.
-  if (!trail.length || Math.abs(player.x - trail[0].x) >= 1) {
-    trail.unshift({ x: player.x, facing: player.facing });
-    if (trail.length > 140) trail.pop();
+  // Party trail: one point per unit walked (filled in at any speed), so followers keep
+  // fixed distances. A jump across the map (teleport, restore) starts a fresh trail.
+  const gap = trail.length ? player.x - trail[0].x : Infinity;
+  if (Math.abs(gap) > 80) trail.splice(0, trail.length, { x: player.x, facing: player.facing });
+  else {
+    for (let n = Math.floor(Math.abs(gap)); n > 0; n--) trail.unshift({ x: player.x - Math.sign(gap) * (n - 1), facing: player.facing });
+    if (trail.length > 140) trail.length = 140;
   }
   updateFollowers(dt);
 
@@ -364,6 +440,8 @@ function update(dt) {
   camX += (camTarget - camX) * (1 - Math.exp(-dt * (reduced ? 12 : 5)));
 
   updateWorldState(dt);
+  updateTour(dt);
+  updateContact();
   fx.update(dt);
   shake = Math.max(0, shake - dt * 3);
   evolveGlow = Math.max(0, evolveGlow - dt * 1.4);
@@ -384,33 +462,59 @@ function update(dt) {
   }
 }
 
-function updateFollowers(dt) {
-  const count = followerCountAt(player.x);
-  if (count > followerCount) {
-    for (let i = followerCount; i < count; i++) {
-      const point = trail[Math.min(trail.length - 1, (i + 1) * 11)] || { x: player.x };
-      followers[i] = { x: point.x, phase: 0, facing: 1, jumpY: 0, vy: 0, jumpAt: 0 };
-      fx.burst(point.x, GROUND - 10, { count: 18, colors: ['#ffffff', '#ffd84a', '#3cf2ff'], speed: 35, life: 0.7 });
-    }
-    sfx('join', player.era);
-  } else if (count < followerCount) {
-    for (let i = count; i < followerCount; i++) {
-      if (followers[i]) fx.burst(followers[i].x, GROUND - 10, { count: 12, colors: ['#cfcfcf', '#ffffff'], speed: 25, life: 0.5, gravity: -20 });
-    }
-    followers.length = count;
-  }
-  followerCount = count;
+// Where follower i walks in the party line: a fixed distance back on Bruno's trail.
+function slotX(i) {
+  const back = (i + 1) * 11;
+  return trail[back] ? trail[back].x : player.x - back * player.facing;
+}
 
-  for (let i = 0; i < followers.length; i++) {
-    const f = followers[i];
-    const point = trail[Math.min(trail.length - 1, (i + 1) * 11)];
-    if (!point) continue;
-    const moved = point.x - f.x;
-    f.x = point.x;
+function updateFollowers(dt) {
+  const reduced = reducedQuery.matches;
+  TEAM.forEach((g, group) => {
+    const st = byId[g.board];
+    // Joins from the billboard onwards; leaves only well behind it, so they never flip back and forth.
+    const read = hud.boardRead(g.board) || player.x >= st.x + 70;
+    if (!recruited[group] && started && player.x >= st.x - 30 && read) recruit(group, reduced);
+    else if (recruited[group] && player.x < st.x - 60) {
+      recruited[group] = false;
+      for (const f of followers) if (f.group === group) f.state = 'home';
+    }
+  });
+
+  followers.forEach((f, i) => {
+    const before = f.x;
+    if (f.state === 'alert') {
+      // Staggered: each dev notices Bruno a beat after the previous one.
+      f.t += dt;
+      if (f.t > 0) {
+        f.facing = Math.sign(player.x - f.x) || -1;
+        if (TEAM[f.group].door) f.alpha = Math.min(1, f.alpha + dt * 2.5);
+      }
+      if (f.t > 0.55) f.state = 'run';
+    } else if (f.state === 'run') {
+      const d = slotX(i) - f.x;
+      const speed = Math.max(RUN * 1.15, Math.abs(player.vx) + 70);
+      f.x += Math.sign(d) * Math.min(Math.abs(d), speed * dt);
+      if (Math.abs(slotX(i) - f.x) < 2) join(f, i);
+    } else if (f.state === 'team') {
+      f.x = slotX(i);
+    } else if (f.state === 'home') {
+      const d = f.spot - f.x;
+      // Far off screen (rewind, replay): just put them back.
+      if (Math.abs(d) < 1 || Math.abs(player.x - f.x) > 320) {
+        f.x = f.spot;
+        f.state = 'wait';
+        f.facing = -1;
+        if (TEAM[f.group].door) f.alpha = 0;
+      } else f.x += Math.sign(d) * Math.min(Math.abs(d), WALK * dt);
+    }
+    if (f.state === 'wait' && TEAM[f.group].door) f.alpha = Math.max(0, f.alpha - dt * 2.5);
+
+    const moved = f.x - before;
     f.phase = (f.phase + Math.abs(moved) / (STRIDE * 0.86)) % 1;
     f.walking = Math.abs(moved) > 0.05;
-    if (Math.abs(moved) > 0.05) f.facing = Math.sign(moved);
-    // Followers repeat the leader's jumps with a delay.
+    if (f.walking) f.facing = Math.sign(moved);
+    // Team members repeat the leader's jumps with a delay.
     if (f.jumpAt && time >= f.jumpAt) {
       f.vy = JUMP_V * 0.9;
       f.jumpAt = 0;
@@ -420,8 +524,59 @@ function updateFollowers(dt) {
       f.jumpY = Math.max(0, f.jumpY + f.vy * dt);
       if (f.jumpY === 0) f.vy = 0;
     }
-  }
-  if (player.vy > JUMP_V * 0.95) followers.forEach((f, i) => (f.jumpAt = time + 0.12 * (i + 1)));
+  });
+  if (player.vy > JUMP_V * 0.95) followers.forEach((f, i) => f.state === 'team' && (f.jumpAt = time + 0.12 * (i + 1)));
+  hud.setTeam(followers.filter((f) => f.state === 'team').length);
+}
+
+// The group's billboard was read: the devs notice Bruno one by one and run to join.
+// Flying past, with reduced motion or with the spot off screen, they just fall in line.
+function recruit(group, reduced) {
+  recruited[group] = true;
+  const members = followers.filter((f) => f.group === group);
+  const instant = reduced || fastTravel() || members.every((f) => Math.abs(f.x - player.x) > 220);
+  members.forEach((f) => {
+    if (instant) {
+      f.state = 'team';
+      f.alpha = 1;
+      f.x = slotX(followers.indexOf(f));
+    } else {
+      f.state = 'alert';
+      f.t = -0.4 * f.k;
+    }
+  });
+  // Reduced motion still gets the banner; fast travel and a restored save stay quiet.
+  if (instant && reduced && !fastTravel()) teamBanner(group);
+}
+
+function join(f, i) {
+  f.state = 'team';
+  f.alpha = 1;
+  const k = unit / dpr;
+  hud.teamPop((f.x - camX) * k, (GROUND - 26 + skyUnits) * k, ERAS[player.era].id);
+  fx.burst(f.x, GROUND - 10, { count: 14, colors: ['#ffffff', '#3cf2ff', '#ffd84a'], speed: 30, life: 0.6 });
+  sfx('join', player.era);
+  if (followers.every((o) => o.group !== f.group || o.state === 'team')) teamBanner(f.group);
+}
+
+function teamBanner(group) {
+  const size = followers.filter((f) => f.group <= group).length;
+  hud.banner(T.teamBanner[group], T.teamSize(size), ERAS[player.era].id);
+  if (group === 0) offerContact();
+}
+
+// "!" over a dev who just noticed Bruno.
+function drawAlert(P, f) {
+  if (f.state !== 'alert' || f.t < 0) return;
+  const grow = Math.min(1, f.t / 0.12);
+  const w = 5 * grow;
+  const h = 6.5 * grow;
+  const y = GROUND - 19 - Math.sin(Math.min(1, f.t / 0.2) * Math.PI) * 1.5;
+  P.ctx.fillStyle = '#ffffff';
+  P.ctx.fillRect(P.X(f.x - w / 2), P.Y(y - h), w * P.s, h * P.s);
+  P.ctx.fillStyle = '#1c1430';
+  P.ctx.fillRect(P.X(f.x - w / 2), P.Y(y), w * P.s, 0.6 * P.s);
+  if (grow >= 1) P.label('!', f.x - w / 2, y - h, w, h, '#e0305a');
 }
 
 function changeEra(index, reduced, fromLook, toLook, fromClass, toClass) {
@@ -757,9 +912,13 @@ function drawActors(P) {
   if (team && started) drawPedestrians(P, team);
   for (let i = followers.length - 1; i >= 0; i--) {
     const f = followers[i];
+    if (f.alpha <= 0.01 || Math.abs(f.x - camX - W / unit / 2) > W / unit) continue;
+    P.ctx.globalAlpha = f.alpha;
     const pose = { walk: f.walking ? 1 : 0, phase: f.phase, jump: f.jumpY > 0, breath: Math.floor(time * 1.6 + i) % 2, blink: (time + i) % 4.1 < 0.13 };
     if (team) drawSheet(P, team, i, pose, f.x, f.jumpY, f.facing, 0.88);
     else drawSprite(P, `f${i}`, followerLook(i), pose, chapterAt(f.x), f.x, f.jumpY, f.facing, 0.86 * CHAR_SCALE);
+    P.ctx.globalAlpha = 1;
+    drawAlert(P, f);
   }
 
   const stage = eraIndexAt(player.x);
@@ -992,4 +1151,6 @@ resize();
 requestAnimationFrame(frame);
 
 // Debug/QA hook: lets automated checks jump around the world.
-window.__game = { player, world, save: () => writeSave(), travelTo: (x) => travelTo(x, 2000), teleport: (x) => { player.x = x; camX = x - 120; } };
+window.__game = { player, world, followers, tour: () => tour, save: () => writeSave(), travelTo: (x) => travelTo(x, 2000), teleport: (x) => { player.x = x; camX = x - 120; },
+  // Advances the game by fixed frames, for checks in a throttled background tab.
+  step: (seconds, dt = 1 / 30) => { for (let t = 0; t < seconds; t += dt) { update(dt); updateOverlay(dt); } render(); } };

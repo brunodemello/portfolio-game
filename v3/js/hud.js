@@ -9,6 +9,34 @@ const $ = (sel) => document.querySelector(sel);
 const ACHIEVEMENTS = T.achievements;
 const GROUP_NAMES = T.groups;
 
+// Copies a value (the e-mail) and confirms on the button; falls back to a hidden textarea
+// where the clipboard API is blocked. Inside a modal dialog the textarea must live in it.
+async function copyFrom(button) {
+  const text = button.dataset.copy;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const area = el('textarea');
+    area.value = text;
+    (button.closest('dialog') || document.body).append(area);
+    area.select();
+    try {
+      document.execCommand('copy');
+    } catch {
+      // Nothing else to try: the address is still written on screen.
+    }
+    area.remove();
+  }
+  button.dataset.label ||= button.textContent;
+  button.textContent = T.emailCopied;
+  button.classList.add('copied');
+  clearTimeout(button.copyTimer);
+  button.copyTimer = setTimeout(() => {
+    button.textContent = button.dataset.label;
+    button.classList.remove('copied');
+  }, 1800);
+}
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -47,9 +75,10 @@ export class Hud {
     this.year = '';
     this.panelOpen = null;
     this.docked = matchMedia('(max-width: 720px), (max-height: 520px)');
+    // Skills first: the ending card's character sheet needs the list.
+    this.readSkills();
     this.buildBillboards();
     this.buildTimeline();
-    this.readSkills();
     this.buildWheel();
     this.bindPanels();
     $('#sound').addEventListener('click', () => {
@@ -60,6 +89,10 @@ export class Hud {
     });
     $('#start').addEventListener('click', () => handlers.onStart(false));
     $('#continue').addEventListener('click', () => handlers.onStart(true));
+    $('#watch').addEventListener('click', () => handlers.onWatch());
+    $('#watch-stop').addEventListener('click', () => handlers.onWatchStop());
+    $('#nudge-close').addEventListener('click', () => this.nudge(false));
+    for (const button of document.querySelectorAll('[data-copy]')) button.addEventListener('click', () => copyFrom(button));
     try {
       if (sessionStorage.getItem('bdm-seen')) $('#title-screen').classList.add('quick');
       sessionStorage.setItem('bdm-seen', '1');
@@ -132,19 +165,42 @@ export class Hud {
     }
   }
 
-  // The end of the road: how much of the career was explored, and where to go next.
+  // The end of the road: a character sheet (class, facts, attributes filled by the skills
+  // collected), how much was explored and where to go next.
   endingCard() {
     const card = el('div', 'bb-ending');
+    const sheet = el('div', 'sheet');
+    const portrait = el('img', 'sheet-portrait');
+    portrait.src = new URL('../art/web/bruno-2026-idle.webp', import.meta.url).href;
+    portrait.alt = '';
+    const head = el('div', 'sheet-head');
+    head.append(el('small', 'sheet-kicker', T.sheet), el('b', 'bb-level', T.endLevel(11, T.classes.head)));
+    const facts = el('ul', 'sheet-facts');
+    T.sheetFacts.forEach((f) => facts.append(el('li', '', f)));
+    head.append(facts);
+    sheet.append(portrait, head);
+    const attrs = el('ul', 'sheet-attrs');
+    for (const [group, name] of Object.entries(GROUP_NAMES)) {
+      const total = this.skillList.filter((s) => s.group === group).length;
+      if (!total) continue;
+      const li = el('li');
+      li.dataset.group = group;
+      const bar = el('span', 'sheet-bar');
+      bar.append(el('i'));
+      li.append(el('span', 'sheet-name', name), bar, el('b', 'sheet-n', `0/${total}`));
+      attrs.append(li);
+    }
     const stats = el('p', 'bb-stats');
     const [a, b, c] = T.endStats;
     const total = this.stations.reduce((n, st) => n + st.skills.length, 0);
     stats.append(a, el('b', 'bb-count', '0'), b(total), el('b', 'bb-achv', '0'), c(Object.keys(ACHIEVEMENTS).length));
-    card.append(el('b', 'bb-level', T.endLevel(11, T.classes.head)));
     const actions = el('div', 'bb-actions');
     const jobs = el('button', 'bb-btn primary', T.endJobs);
     jobs.dataset.panel = 'vagas';
     const projects = el('button', 'bb-btn primary', T.endProjects);
     projects.dataset.panel = 'projetos';
+    const mail = el('button', 'bb-btn', T.copyEmail);
+    mail.dataset.copy = 'contact@brunodemello.dev';
     const wheel = el('button', 'bb-btn bb-wheel', T.endWheel);
     const replay = el('button', 'bb-btn', T.endReplay);
     replay.addEventListener('click', () => this.handlers.onReplay());
@@ -161,10 +217,20 @@ export class Hud {
         // Share sheet dismissed or clipboard blocked: nothing to do.
       }
     });
-    [jobs, projects, wheel, replay, share].forEach((b) => (b.type = 'button'));
-    actions.append(jobs, projects, wheel, replay, share);
-    card.append(stats, actions);
+    [jobs, projects, mail, wheel, replay, share].forEach((b) => (b.type = 'button'));
+    actions.append(jobs, projects, mail, wheel, replay, share);
+    card.append(sheet, attrs, stats, actions);
     return card;
+  }
+
+  // Attribute bars on the character sheet, one per skill group.
+  updateSheet() {
+    for (const li of document.querySelectorAll('.sheet-attrs li')) {
+      const all = this.skillList.filter((s) => s.group === li.dataset.group);
+      const got = all.filter((s) => this.unlocked.has(s.name)).length;
+      li.querySelector('i').style.transform = `scaleX(${(got / all.length).toFixed(3)})`;
+      li.querySelector('.sheet-n').textContent = `${got}/${all.length}`;
+    }
   }
 
   // Called every frame with the player's situation.
@@ -307,6 +373,7 @@ export class Hud {
     const count = $('#skill-count');
     count.textContent = String(this.collectedCount);
     for (const c of document.querySelectorAll('.bb-count')) c.textContent = String(this.collectedCount);
+    this.updateSheet();
     if (this.collectedCount === this.skillList.length) this.achieve('collector');
     const orb = $('#skill-orb');
     orb.style.setProperty('--p', `${(this.collectedCount / this.skillList.length) * 360}deg`);
@@ -582,6 +649,34 @@ export class Hud {
     $('#era-spec').textContent = name;
   }
 
+  // Team size next to the level; hidden until the first dev joins.
+  setTeam(n) {
+    if (this.team === n) return;
+    this.team = n;
+    const node = $('#team');
+    $('.hud-team').hidden = n === 0;
+    node.textContent = String(n);
+    node.classList.remove('tick');
+    void node.offsetWidth;
+    node.classList.add('tick');
+  }
+
+  // "+1 on the team" floating up from a dev as they join.
+  teamPop(cssX, cssY, chapterId) {
+    const pop = el('div', `lvpop team chip--${chapterId}`);
+    pop.append(el('b', '', '+1'), el('small', '', T.teamPop));
+    pop.style.left = `${Math.round(cssX)}px`;
+    pop.style.top = `${Math.round(cssY)}px`;
+    $('#app').append(pop);
+    setTimeout(() => pop.remove(), 1600);
+  }
+
+  // A billboard counts as read once its text has finished typing.
+  boardRead(id) {
+    const b = this.boards.get(id);
+    return Boolean(b && b.open && b.typed >= b.st.body.length);
+  }
+
   // "+1 LV" floating up from Bruno's head.
   levelPop(level, cssX, cssY, chapterId) {
     const pop = el('div', `lvpop chip--${chapterId}`);
@@ -649,6 +744,7 @@ export class Hud {
     if (!dialog || dialog.open) return;
     for (const d of document.querySelectorAll('dialog.panel[open]')) d.close();
     this.panelOpen = id;
+    this.nudge(false);
     dialog.showModal();
   }
 
@@ -658,6 +754,19 @@ export class Hud {
     setTimeout(() => {
       title.hidden = true;
     }, 700);
+  }
+
+  // Watch mode: the bar that says so and hands control back.
+  watching(on) {
+    $('#watch-bar').hidden = !on;
+  }
+
+  // "Enjoying it? Talk to me now": shown once, hides by itself.
+  nudge(show) {
+    const node = $('#nudge');
+    clearTimeout(this.nudgeTimer);
+    node.hidden = !show;
+    if (show) this.nudgeTimer = setTimeout(() => (node.hidden = true), 14000);
   }
 
   hint(show) {

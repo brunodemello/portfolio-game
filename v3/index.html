@@ -38,6 +38,7 @@
       <div class="hud-id">
         <span class="hud-name">BRUNO DE MELLO</span>
         <span class="hud-level"><i id="level-label">NÍVEL</i> <b id="level">1</b><span class="level-bar"><span id="level-fill"></span></span></span>
+        <span class="hud-team" hidden><i id="team-label">TIME</i> <b id="team">0</b></span>
         <span class="hud-year"><i id="year-prefix">ANO </i><b id="year">2013</b></span>
       </div>
       <div class="era-badge" id="era-badge">
@@ -63,6 +64,21 @@
       <span class="orb-key">K</span>
     </button>
     <div class="skill-pops" id="skill-pops" aria-hidden="true"></div>
+
+    <div class="watch-bar" id="watch-bar" hidden>
+      <span>▶ MODO ASSISTIR</span>
+      <button type="button" id="watch-stop">Assumir o controle</button>
+    </div>
+
+    <aside class="nudge" id="nudge" hidden>
+      <button type="button" class="nudge-close" id="nudge-close" aria-label="Fechar">✕</button>
+      <small>GOSTANDO DA JORNADA?</small>
+      <p>Não precisa chegar ao fim: já dá para falar comigo.</p>
+      <div class="nudge-actions">
+        <button type="button" data-panel="vagas">Tenho uma vaga</button>
+        <button type="button" data-panel="projetos">Tenho um projeto</button>
+      </div>
+    </aside>
 
     <div class="hint" id="hint" hidden>
       <span class="hint-keys"><kbd>←</kbd><kbd>→</kbd> andar &nbsp;<kbd>Shift</kbd> correr &nbsp;<kbd>↑</kbd> pular</span>
@@ -91,6 +107,7 @@
         <p class="title-sub">Tech Lead · Full Stack · IA</p>
         <button type="button" class="start" id="continue" hidden>▶ CONTINUAR</button>
         <button type="button" class="start" id="start">▶ PRESS START</button>
+        <button type="button" class="start-alt" id="watch">▶ ASSISTIR · 2 MIN</button>
         <div class="title-links">
           <button type="button" data-panel="vagas">Ver currículo</button>
           <button type="button" data-panel="projetos">Tenho um projeto</button>
@@ -290,6 +307,7 @@
         <a class="btn primary" href="/pt/resume/">Currículo completo</a>
         <a class="btn" href="/downloads/bruno-de-mello-pt.pdf" download>Baixar PDF</a>
         <a class="btn" href="mailto:contact@brunodemello.dev?subject=Vaga">contact@brunodemello.dev</a>
+        <button type="button" class="btn" data-copy="contact@brunodemello.dev">Copiar e-mail</button>
       </div>
       <h3>Experiência</h3>
       <ul class="cv">
@@ -328,7 +346,9 @@
       <p class="panel-note">Projeto fechado para entregas ou mensalidade para manutenção. Orçamento sob medida. <b>Agenda limitada: aceitando novos projetos.</b></p>
       <div class="panel-actions">
         <a class="btn primary" href="mailto:contact@brunodemello.dev?subject=Projeto">Pedir orçamento</a>
+        <button type="button" class="btn" data-copy="contact@brunodemello.dev">Copiar e-mail</button>
       </div>
+      <p class="panel-mail">Ou escreva direto para <b>contact@brunodemello.dev</b></p>
     </div>
   </dialog>
 </body>

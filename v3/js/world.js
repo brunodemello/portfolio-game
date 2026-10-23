@@ -30,12 +30,13 @@ export function eraIndexAt(x) {
   return index;
 }
 
-// Followers join when Bruno starts leading the team.
-export function followerCountAt(x) {
-  if (x >= 4080) return 5;
-  if (x >= 3380) return 3;
-  return 0;
-}
+// The team Bruno leads waits in the scene: each group joins once the visitor has read the
+// billboard that tells the story (or walked past it). Spots are where each dev stands;
+// the second group comes out of the department's door.
+export const TEAM = [
+  { board: 'techlead', spots: [3424, 3438, 3452] },
+  { board: 'dept', spots: [4120, 4120], door: true },
+];
 
 const YEAR_KEYS = [[0, 2013], [760, 2015], [1640, 2018], [2360, 2019], [2820, 2021], [3150, 2024], [3700, 2025], [3820, 2026]];
 const TODAY_X = 5100;
