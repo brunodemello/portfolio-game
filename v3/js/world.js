@@ -37,19 +37,57 @@ export function followerCountAt(x) {
   return 0;
 }
 
-const YEAR_KEYS = [[0, 2013], [760, 2015], [1640, 2018], [2360, 2019], [2820, 2021], [3150, 2024], [3820, 2026]];
+const YEAR_KEYS = [[0, 2013], [760, 2015], [1640, 2018], [2360, 2019], [2820, 2021], [3150, 2024], [3700, 2025], [3820, 2026]];
+const TODAY_X = 5100;
 
-export function yearAt(x) {
-  if (x >= 5100) return T.today;
+// Calendar year at a position, as a continuous value (2018.5 = halfway through 2018).
+export function yearValue(x) {
   for (let i = YEAR_KEYS.length - 1; i >= 0; i--) {
     const [kx, year] = YEAR_KEYS[i];
     if (x < kx) continue;
     const next = YEAR_KEYS[i + 1];
-    if (!next) return String(year);
-    const t = (x - kx) / (next[0] - kx);
-    return String(Math.floor(year + t * (next[1] - year)));
+    if (!next) return year;
+    return year + ((x - kx) / (next[0] - kx)) * (next[1] - year);
   }
-  return '2013';
+  return YEAR_KEYS[0][1];
+}
+
+export function yearAt(x) {
+  if (x >= TODAY_X) return T.today;
+  return String(Math.floor(yearValue(x)));
+}
+
+// Level = completed years of professional experience (first job in 2015): 0 in college
+// and during 2015, 1 in 2016 ... 11 today.
+export const MAX_LEVEL = 11;
+export function levelAt(x) {
+  if (x >= TODAY_X) return MAX_LEVEL;
+  return clamp(Math.floor(yearValue(x)) - 2015, 0, MAX_LEVEL);
+}
+
+// Progress toward the next level (0..1), for the XP bar.
+export function xpAt(x) {
+  if (x >= TODAY_X) return 1;
+  const y = yearValue(x);
+  if (y < 2016) return (y - 2013) / 3;
+  return y - Math.floor(y);
+}
+
+// Bruno's "class" along the career: chapter starts and the promotions in between.
+// Intermediate promotions are spaced in order; their exact years aren't stated anywhere.
+export const CLASSES = [
+  { from: 0, key: 'student' },
+  { from: 760, key: 'trainee' },
+  { from: 1640, key: 'jr' },
+  { from: 2150, key: 'emailAnalyst' },
+  { from: 2600, key: 'mid' },
+  { from: 2820, key: 'emailLead' },
+  { from: 3000, key: 'senior' },
+  { from: 3150, key: 'techlead' },
+  { from: 3820, key: 'head' },
+];
+export function classAt(x) {
+  return CLASSES.reduce((found, c, i) => (x >= c.from ? i : found), 0);
 }
 
 // Day cycle across the career: dawn at university, night neon in the AI era.

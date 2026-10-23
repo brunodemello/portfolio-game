@@ -73,6 +73,10 @@ export function sfx(name, eraIndex = 0) {
       [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.06, 0.18, type, vol));
       [1047, 1319, 1568].forEach((f) => tone(f, 0.34, 0.9, 'triangle', 0.05));
       break;
+    case 'ding':
+      tone(1568, 0, 0.12, type, vol);
+      tone(2093, 0.09, 0.22, 'triangle', 0.05);
+      break;
     case 'tick':
       tone(1200, 0, 0.04, 'triangle', 0.05);
       break;

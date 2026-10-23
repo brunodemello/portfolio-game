@@ -1,6 +1,6 @@
 // Game loop: input -> player/camera update -> rendering -> HTML overlay.
 
-import { ERAS, VIEW_H, GROUND, START_X, MIN_X, MAX_X, eraIndexAt, followerCountAt, yearAt, clamp, hash } from './world.js';
+import { ERAS, VIEW_H, GROUND, START_X, MIN_X, MAX_X, CLASSES, eraIndexAt, followerCountAt, yearAt, levelAt, xpAt, classAt, clamp, hash } from './world.js';
 import { Painter } from './raster.js';
 import { LOOKS, STAGE_BY_ERA, followerLook, getSprite } from './character.js';
 import { drawSkyLayer, drawBackground, drawForeground, DOOR_OFFSETS, doorRects } from './scenery.js';
@@ -335,9 +335,27 @@ function update(dt) {
   const era = eraIndexAt(player.x);
   const phase = phaseAt(player.x);
   const prevLook = player.look ?? phase;
-  if (era !== player.era) changeEra(era, reduced, prevLook, phase);
+  // Class (role) before the chapter check, so a chapter change can show the class change.
+  const cls = classAt(player.x);
+  const prevClass = player.cls ?? cls;
+  player.cls = cls;
+  if (era !== player.era) changeEra(era, reduced, prevLook, phase, prevClass, cls);
   else if (phase > prevLook) changeLook(prevLook, phase, reduced);
+  else if (cls > prevClass) promote(cls);
   player.look = phase;
+
+  // One level per year of experience: a small "+1 LV" that never interrupts.
+  const level = levelAt(player.x);
+  if (player.level === undefined) player.level = level;
+  if (level > player.level && started) {
+    if (!fastTravel()) {
+      const k = unit / dpr;
+      hud.levelPop(level, (player.x - camX) * k, (GROUND - 30 + skyUnits) * k, ERAS[player.era].id);
+      fx.burst(player.x, GROUND - 24, { count: 16, colors: ['#ffe14a', '#ffffff'], speed: 30, life: 0.7, gravity: 20, up: 25 });
+      sfx('ding', player.era);
+    }
+  }
+  player.level = level;
 
   // Camera with a little lookahead in the walking direction.
   const Wu = W / unit;
@@ -406,7 +424,7 @@ function updateFollowers(dt) {
   if (player.vy > JUMP_V * 0.95) followers.forEach((f, i) => (f.jumpAt = time + 0.12 * (i + 1)));
 }
 
-function changeEra(index, reduced, fromLook, toLook) {
+function changeEra(index, reduced, fromLook, toLook, fromClass, toClass) {
   const up = index > player.era;
   player.era = index;
   const era = ERAS[index];
@@ -419,12 +437,22 @@ function changeEra(index, reduced, fromLook, toLook) {
   }
   // Flying past on the timeline or with reduced motion: a quick card, no slow motion.
   if (reduced || fastTravel()) {
-    hud.levelUpCard(chapterCard(index));
+    hud.levelUpCard(chapterCard(index, fromClass, toClass));
     evolveGlow = 1;
     sfx('upgrade', index);
     return;
   }
-  startLevelUp('chapter', fromLook, toLook, index);
+  startLevelUp('chapter', fromLook, toLook, index, fromClass, toClass);
+}
+
+// A promotion between chapters: banner, sparkles and a short chime, no slow motion.
+function promote(cls) {
+  if (fastTravel()) return;
+  const name = T.classes[CLASSES[cls].key];
+  hud.banner(T.promotion, name, ERAS[player.era].id);
+  evolveGlow = 0.8;
+  fx.burst(player.x, GROUND - 14, { count: 34, colors: ['#ffffff', '#ffe14a', '#ffb0f0'], speed: 50, life: 1, gravity: 22, up: 20 });
+  sfx('upgrade', player.era);
 }
 
 // A new outfit inside the same chapter (2017, i9): a short version of the sequence.
@@ -443,10 +471,10 @@ function changeLook(fromLook, toLook, reduced) {
 
 let levelUp = null;
 
-function startLevelUp(kind, fromLook, toLook, chapterIndex) {
+function startLevelUp(kind, fromLook, toLook, chapterIndex, fromClass, toClass) {
   const chapter = kind === 'chapter';
   levelUp = {
-    kind, fromLook, toLook, chapterIndex, t: 0, revealed: false,
+    kind, fromLook, toLook, chapterIndex, fromClass, toClass, t: 0, revealed: false,
     reveal: chapter ? 1.5 : 0.75,
     dur: chapter ? 2.6 : 1.3,
   };
@@ -462,20 +490,21 @@ function revealLevelUp() {
   evolveGlow = 1;
   fx.burst(player.x, GROUND - 12, { count: chapter ? 70 : 34, colors: ['#ffffff', '#ffe14a', '#7ff6ff', '#ff9ad8'], speed: chapter ? 90 : 55, life: 1.2, gravity: 22, up: 30 });
   sfx(chapter ? 'levelup' : 'upgrade', levelUp.chapterIndex);
-  if (chapter) hud.levelUpCard(chapterCard(levelUp.chapterIndex));
+  if (chapter) hud.levelUpCard(chapterCard(levelUp.chapterIndex, levelUp.fromClass, levelUp.toClass));
   else hud.banner(T.newLook, `${stations.find((st) => st.id === 'i9')?.kicker || ''} · i9`, ERAS[player.era].id);
 }
 
 // Card content: the chapter's first milestone (years and role) and how many skills it holds.
-function chapterCard(index) {
+// Class-change card: the new class, the one it came from, the level and the chapter.
+function chapterCard(index, fromClass, toClass) {
   const era = ERAS[index];
   const inChapter = stations.filter((st) => eraIndexAt(st.x) === index);
-  const first = inChapter[0];
+  const name = (i) => (i === undefined ? '' : T.classes[CLASSES[i].key]);
   return {
-    level: index + 1,
+    level: levelAt(player.x),
     name: era.name,
-    years: first?.kicker || '',
-    role: first ? `${first.title}${first.role ? ' · ' + first.role : ''}` : era.spec,
+    fromClass: name(fromClass),
+    toClass: name(toClass ?? classAt(player.x)),
     skills: inChapter.reduce((n, st) => n + st.skills.length, 0),
     id: era.id,
   };
@@ -658,15 +687,14 @@ function updateOverlay(dt) {
   hud.openId = openId;
 
   const cssWidth = W / dpr;
-  hud.updateBillboards({ near, camX, unitCss: unit / dpr, cssWidth, jrStep: world.jrStep }, dt, reducedQuery.matches);
+  hud.updateBillboards({ near, camX, unitCss: unit / dpr, cssWidth, jrStep: world.jrStep, x: player.x }, dt, reducedQuery.matches);
 
   let current = null;
   for (const st of stations) if (st.label && player.x >= st.x - 60) current = st.id;
   hud.updateTimeline(player.x, current);
   hud.setYear(yearAt(player.x));
-  const era = ERAS[player.era];
-  const end = Number.isFinite(era.to) ? era.to : MAX_X;
-  hud.setLevel(player.era + 1, clamp((player.x - era.from) / (end - era.from), 0, 1));
+  hud.setLevel(levelAt(player.x), xpAt(player.x));
+  hud.setClass(T.classes[CLASSES[classAt(player.x)].key]);
 
   if (world.atOffice && !hud.panelOpen) {
     const k = unit / dpr;

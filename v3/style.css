@@ -644,6 +644,24 @@ html:not(.js) #app { display: none; }
 @keyframes levelup-stars { from { letter-spacing: 40px; opacity: 0; } to { letter-spacing: 6px; opacity: 1; } }
 @media (max-width: 720px) { .levelup { top: 110px; width: calc(100vw - 24px); padding: 14px 16px; } .level-bar { width: 40px; } }
 
+.lvpop {
+  position: absolute;
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: lvpop 1.6s cubic-bezier(.2,1.2,.3,1) forwards;
+}
+.lvpop b { font-family: var(--pixel); font-size: 14px; color: #ffe14a; text-shadow: 2px 2px 0 #3b1e5a, 0 0 14px #ffd84a; }
+.lvpop small { font-family: var(--game); font-size: 13px; color: #fff; text-shadow: 1px 1px 0 #000; }
+@keyframes lvpop { 0% { opacity: 0; transform: translate(-50%, -60%) scale(0.5); } 15% { opacity: 1; transform: translate(-50%, -110%) scale(1.15); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -220%) scale(1); } }
+#level.tick { display: inline-block; animation: tick 0.4s cubic-bezier(.2,1.6,.4,1); color: #ffe14a; }
+.levelup-from { font-family: var(--game); font-size: 16px; color: var(--muted); text-decoration: line-through; opacity: 0.8; }
+.bb-level { display: block; margin-bottom: 6px; font-family: var(--game); font-size: 20px; color: var(--accent); }
+.bb-steps li.now { background: var(--accent); color: #17121f; border-color: transparent; transform: scale(1.05); }
+
 .flash { position: absolute; inset: 0; z-index: 19; background: #fff; opacity: 0; pointer-events: none; }
 .flash.on { animation: flash 0.5s ease-out; }
 

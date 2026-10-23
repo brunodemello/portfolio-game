@@ -27,6 +27,8 @@ export function readStations() {
     role: node.querySelector('.role')?.textContent.trim() || '',
     body: [...node.querySelectorAll('.body')].map((p) => p.textContent.trim()).join('\n\n'),
     steps: [...node.querySelectorAll('.steps li')].map((li) => li.textContent.trim()),
+    // Optional world position where each step lights up (otherwise the Jr.com stars logic).
+    stepsFrom: (node.querySelector('.steps')?.dataset.from || '').split(',').filter(Boolean).map(Number),
     board: [...node.querySelectorAll('.board li')].map((li) => [...li.children].map((c) => c.textContent.trim())),
     links: [...node.querySelectorAll('a.case')].map((a) => [a.getAttribute('href'), a.textContent.trim()]),
     shots: [...node.querySelectorAll('.shots img')].map((im) => [im.getAttribute('src'), im.getAttribute('alt')]),
@@ -137,6 +139,7 @@ export class Hud {
     const [a, b, c] = T.endStats;
     const total = this.stations.reduce((n, st) => n + st.skills.length, 0);
     stats.append(a, el('b', 'bb-count', '0'), b(total), el('b', 'bb-achv', '0'), c(Object.keys(ACHIEVEMENTS).length));
+    card.append(el('b', 'bb-level', T.endLevel(11, T.classes.head)));
     const actions = el('div', 'bb-actions');
     const jobs = el('button', 'bb-btn primary', T.endJobs);
     jobs.dataset.panel = 'vagas';
@@ -191,7 +194,11 @@ export class Hud {
         b.body.classList.toggle('typing', b.typed < b.st.body.length);
       }
       if (b.steps) {
-        [...b.steps.children].forEach((li, i) => li.classList.toggle('on', i <= view.jrStep));
+        [...b.steps.children].forEach((li, i) => {
+          const on = b.st.stepsFrom.length ? view.x >= b.st.stepsFrom[i] : i <= view.jrStep;
+          li.classList.toggle('on', on);
+          li.classList.toggle('now', b.st.stepsFrom.length > 0 && on && !(view.x >= b.st.stepsFrom[i + 1]));
+        });
       }
       if (!near) continue;
       if (docked) {
@@ -530,7 +537,7 @@ export class Hud {
   setEra(era, animate) {
     document.documentElement.dataset.era = era.id;
     $('#era-name').textContent = era.name;
-    $('#era-spec').textContent = era.spec;
+    if (!this.className) $('#era-spec').textContent = era.spec;
     if (!animate) return;
     const badge = $('#era-badge');
     badge.classList.remove('upgrade');
@@ -538,27 +545,51 @@ export class Hud {
     badge.classList.add('upgrade');
   }
 
-  // HUD level and how far into the chapter Bruno is.
+  // HUD level and the XP bar toward the next one.
   setLevel(level, progress) {
     if (this.level !== level) {
       this.level = level;
-      $('#level').textContent = String(level);
-      $('#level-label').textContent = T.level;
+      const node = $('#level');
+      node.textContent = String(level);
+      $('#level-label').textContent = T.levelShort;
+      node.classList.remove('tick');
+      void node.offsetWidth;
+      node.classList.add('tick');
     }
     $('#level-fill').style.transform = `scaleX(${progress.toFixed(3)})`;
   }
 
   // The big level-up card shown at the reveal.
-  levelUpCard({ level, name, years, role, skills, id }) {
+  // Class-change card: "NEW CLASS! · Senior Developer → Tech Lead · LEVEL 9 · chapter".
+  levelUpCard({ level, name, fromClass, toClass, skills, id }) {
     $('#levelup')?.remove();
     const card = el('div', `levelup chip--${id}`);
     card.id = 'levelup';
     const stars = el('div', 'levelup-stars', '★ ★ ★');
-    card.append(el('small', 'levelup-kicker', 'LEVEL UP!'), stars, el('b', 'levelup-title', `${T.level} ${level} · ${name}`));
-    if (role) card.append(el('span', 'levelup-role', [years, role].filter(Boolean).join(' · ')));
+    card.append(el('small', 'levelup-kicker', T.newClass), stars);
+    if (fromClass && fromClass !== toClass) card.append(el('span', 'levelup-from', fromClass));
+    card.append(el('b', 'levelup-title', toClass));
+    card.append(el('span', 'levelup-role', `${T.level} ${level} · ${name}`));
     if (skills) card.append(el('em', 'levelup-skills', T.skillsIn(skills)));
     $('#app').append(card);
     setTimeout(() => card.remove(), 3200);
+  }
+
+  // Current class, shown under the chapter name.
+  setClass(name) {
+    if (this.className === name) return;
+    this.className = name;
+    $('#era-spec').textContent = name;
+  }
+
+  // "+1 LV" floating up from Bruno's head.
+  levelPop(level, cssX, cssY, chapterId) {
+    const pop = el('div', `lvpop chip--${chapterId}`);
+    pop.append(el('b', '', `+1 ${T.levelShort}`), el('small', '', `${T.level} ${level}`));
+    pop.style.left = `${Math.round(cssX)}px`;
+    pop.style.top = `${Math.round(cssY)}px`;
+    $('#app').append(pop);
+    setTimeout(() => pop.remove(), 1600);
   }
 
   banner(text, subtitle, eraId) {
