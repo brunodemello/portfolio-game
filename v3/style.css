@@ -1149,3 +1149,22 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
 .bb-extras { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin-top: 10px; }
 .bb-extras button { padding: 2px 0; background: none; border: 0; color: var(--muted); font-family: var(--game); font-size: 13px; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.25); text-underline-offset: 3px; }
 .bb-extras button:hover, .bb-extras button.copied { color: var(--accent); }
+
+/* ---------- sound hint ---------- */
+
+.sound-hint {
+  position: absolute;
+  z-index: 15;
+  padding: 8px 12px;
+  background: var(--glass-strong);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-family: var(--game);
+  font-size: 15px;
+  color: var(--ink);
+  animation: nudge-in 0.4s cubic-bezier(.2, 1.4, .4, 1);
+  pointer-events: none;
+}
+.sound-hint::before { content: ''; position: absolute; top: -6px; right: 18px; width: 10px; height: 10px; background: var(--glass-strong); border-left: 1px solid var(--accent); border-top: 1px solid var(--accent); transform: rotate(45deg); }
+#sound.hinting { animation: sound-pulse 0.9s ease-in-out infinite; }
+@keyframes sound-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent); } }

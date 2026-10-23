@@ -350,7 +350,11 @@ function update(dt) {
   if (levelUp) {
     levelUp.t += dt;
     if (!levelUp.revealed && levelUp.t >= levelUp.reveal) revealLevelUp();
-    if (levelUp.t >= levelUp.dur) levelUp = null;
+    if (levelUp.t >= levelUp.dur) {
+      // Right after the first chapter change: a good moment to suggest the sound.
+      if (levelUp.kind === 'chapter') hud.soundHint();
+      levelUp = null;
+    }
     else if (levelUp.kind === 'chapter' && !levelUp.revealed) dt *= 0.2;
   }
   time += dt;
@@ -1156,6 +1160,6 @@ resize();
 requestAnimationFrame(frame);
 
 // Debug/QA hook: lets automated checks jump around the world.
-window.__game = { player, world, followers, tour: () => tour, save: () => writeSave(), travelTo: (x) => travelTo(x, 2000), teleport: (x) => { player.x = x; camX = x - 120; },
+window.__game = { player, world, followers, hud, tour: () => tour, save: () => writeSave(), travelTo: (x) => travelTo(x, 2000), teleport: (x) => { player.x = x; camX = x - 120; },
   // Advances the game by fixed frames, for checks in a throttled background tab.
   step: (seconds, dt = 1 / 30) => { for (let t = 0; t < seconds; t += dt) { update(dt); updateOverlay(dt); } render(); } };

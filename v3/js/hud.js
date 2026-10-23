@@ -206,22 +206,143 @@ export class Hud {
     const replay = el('button', '', T.endReplay);
     replay.addEventListener('click', () => this.handlers.onReplay());
     const share = el('button', '', T.endShare);
-    share.addEventListener('click', async () => {
-      const url = location.href.split('?')[0];
-      try {
-        if (navigator.share) await navigator.share({ title: document.title, url });
-        else {
-          await navigator.clipboard.writeText(url);
-          share.textContent = T.copied;
-        }
-      } catch {
-        // Share sheet dismissed or clipboard blocked: nothing to do.
-      }
-    });
+    share.addEventListener('click', () => this.share(share));
     [jobs, projects, mail, wheel, replay, share].forEach((b) => (b.type = 'button'));
     extras.append(mail, wheel, replay, share);
     card.append(sheet, attrs, stats, doors, extras);
     return card;
+  }
+
+  // Shares the visitor's character sheet as an image (1200x630, the Open Graph size):
+  // the share sheet where files can be shared (phones), otherwise the image is saved
+  // and the link copied. Any failure falls back to sharing or copying just the link.
+  async share(button) {
+    const url = location.href.split('?')[0];
+    let file = null;
+    try {
+      file = await this.shareImage();
+    } catch {
+      // Canvas or fonts unavailable: share the link alone.
+    }
+    try {
+      if (file && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: document.title, text: T.shareFooter, url });
+        return;
+      }
+      if (file) {
+        const a = el('a');
+        a.href = URL.createObjectURL(file);
+        a.download = file.name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      } else if (navigator.share) {
+        await navigator.share({ title: document.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      button.textContent = file ? T.shared : T.copied;
+    } catch {
+      // Share sheet dismissed or clipboard blocked: nothing to do.
+    }
+  }
+
+  async shareImage() {
+    await Promise.all(['24px "Press Start 2P"', '24px "Pixelify Sans"'].map((f) => document.fonts.load(f)));
+    const load = (src) => new Promise((ok, fail) => {
+      const im = new Image();
+      im.onload = () => ok(im);
+      im.onerror = fail;
+      im.src = src;
+    });
+    const bruno = await load(new URL('../art/web/bruno-2026-idle.webp', import.meta.url).href);
+    const W = 1200;
+    const H = 630;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const c = canvas.getContext('2d');
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3cf2ff';
+    // Night sky of the last chapter: a glow behind Bruno, pixel stars and a neon street line.
+    c.fillStyle = '#0c0a1c';
+    c.fillRect(0, 0, W, H);
+    const glow = c.createRadialGradient(250, 330, 20, 250, 330, 380);
+    glow.addColorStop(0, 'rgba(120,60,200,0.55)');
+    glow.addColorStop(1, 'rgba(120,60,200,0)');
+    c.fillStyle = glow;
+    c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 90; i++) {
+      const sx = (i * 397) % W;
+      const sy = (i * 211) % 470;
+      c.fillStyle = i % 7 ? 'rgba(255,255,255,0.5)' : accent;
+      c.fillRect(sx, sy, i % 5 ? 3 : 5, i % 5 ? 3 : 5);
+    }
+    c.fillStyle = accent;
+    c.fillRect(0, 512, W, 4);
+    c.fillStyle = 'rgba(255,255,255,0.05)';
+    c.fillRect(0, 516, W, H - 516);
+    // Bruno, large, on the left, feet on the street line (feet at 240 of the 256-px cell).
+    c.drawImage(bruno, 40, 118, 420, 420);
+    // The sheet on the right.
+    const x = 470;
+    c.textBaseline = 'top';
+    c.fillStyle = accent;
+    c.font = '18px "Press Start 2P"';
+    c.fillText(T.shareKicker, x, 70);
+    c.fillStyle = '#fff6e6';
+    c.font = '44px "Press Start 2P"';
+    c.fillText('BRUNO DE MELLO', x, 110);
+    c.fillStyle = accent;
+    c.font = '34px "Pixelify Sans"';
+    c.fillText(T.endLevel(11, T.classes.head), x, 182);
+    c.fillStyle = '#c9c1d6';
+    c.font = '24px "Pixelify Sans"';
+    c.fillText(T.sheetFacts.join(' · '), x, 232);
+    // One bar per skill group, filled by what this visitor collected.
+    const groups = Object.keys(GROUP_NAMES).filter((g) => this.skillList.some((s) => s.group === g));
+    groups.forEach((g, i) => {
+      const all = this.skillList.filter((s) => s.group === g);
+      const got = all.filter((s) => this.unlocked.has(s.name)).length;
+      const bx = x + (i % 4) * 172;
+      const by = 296 + Math.floor(i / 4) * 66;
+      c.fillStyle = '#c9c1d6';
+      c.font = '22px "Pixelify Sans"';
+      c.fillText(T.groupsShort[g], bx, by);
+      c.fillStyle = 'rgba(255,255,255,0.14)';
+      c.fillRect(bx, by + 32, 150, 8);
+      c.fillStyle = accent;
+      c.fillRect(bx, by + 32, 150 * (got / all.length), 8);
+    });
+    const achievements = this.achieved?.size || 0;
+    c.fillStyle = '#ffffff';
+    c.font = '28px "Pixelify Sans"';
+    c.fillText(`${this.collectedCount}/${this.skillList.length} ${T.endStats[0]} · ${achievements}/${Object.keys(ACHIEVEMENTS).length} ${T.endStats[1]}`, x, 440);
+    c.fillStyle = '#c9c1d6';
+    c.font = '22px "Pixelify Sans"';
+    c.fillText(T.shareFooter, x, 520);
+    c.fillStyle = accent;
+    c.font = '16px "Press Start 2P"';
+    c.fillText(location.host + location.pathname.replace(/index\.html$/, ''), x, 556);
+    const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/png'));
+    return new File([blob], 'bruno-de-mello-ficha.png', { type: 'image/png' });
+  }
+
+  // "Turn the sound on" under the sound button, once, the first time a chapter changes.
+  soundHint() {
+    const button = $('#sound');
+    if (this.soundHinted || button.getAttribute('aria-pressed') === 'true') return;
+    this.soundHinted = true;
+    const r = button.getBoundingClientRect();
+    const tip = el('div', 'sound-hint', T.soundHint);
+    tip.style.top = `${Math.round(r.bottom + 10)}px`;
+    tip.style.right = `${Math.round(innerWidth - r.right)}px`;
+    $('#app').append(tip);
+    button.classList.add('hinting');
+    const done = () => {
+      tip.remove();
+      button.classList.remove('hinting');
+    };
+    button.addEventListener('click', done, { once: true });
+    setTimeout(done, 5000);
   }
 
   // Attribute bars on the character sheet, one per skill group.
