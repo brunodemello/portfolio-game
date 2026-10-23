@@ -225,7 +225,10 @@ function start(resume = true, keepSave = false) {
 function celebrate() {
   world.celebrated = true;
   const office = byId.office;
-  hud.banner(T.endBanner[0], T.endBanner[1], ERAS[ERAS.length - 1].id);
+  // On phones the office billboard docks where the banner would cover its two buttons,
+  // so the thanks goes to a toast at the bottom instead.
+  if (hud.docked.matches) hud.toast(T.endBanner[0], T.endBanner[1], ERAS[ERAS.length - 1].id);
+  else hud.banner(T.endBanner[0], T.endBanner[1], ERAS[ERAS.length - 1].id);
   sfx('upgrade', ERAS.length - 1);
   for (let i = 0; i < 6; i++) {
     setTimeout(() => {
