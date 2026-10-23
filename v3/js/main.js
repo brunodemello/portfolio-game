@@ -303,6 +303,8 @@ function offerContact() {
 
 function updateContact() {
   if (!contactPending || openId || hud.panelOpen || levelUp || fastTravel()) return;
+  // Not right before a chapter change: the level-up would take the stage a second later.
+  if (ERAS.some((e) => e.from > player.x && e.from - player.x < 160)) return;
   contactPending = false;
   hud.nudge(true);
 }
@@ -464,7 +466,7 @@ function update(dt) {
 
 // Where follower i walks in the party line: a fixed distance back on Bruno's trail.
 function slotX(i) {
-  const back = (i + 1) * 11;
+  const back = (i + 1) * 10;
   return trail[back] ? trail[back].x : player.x - back * player.facing;
 }
 
@@ -903,7 +905,10 @@ function drawPedestrians(P, team) {
     const travel = (((time * speed * dir + hash(k + 4) * span) % span) + span) % span;
     const x = k * span + travel;
     const pose = { walk: 1, phase: ((time * speed) / (STRIDE * 0.8) + hash(k)) % 1, jump: false };
+    // Walkers fade as they pass Bruno, so nobody seems glued to him when he stops.
+    P.ctx.globalAlpha = clamp(Math.abs(x - player.x) / 18, 0.25, 1);
     drawSheet(P, team, Math.floor(hash(k + 1) * 5), pose, x, 2.2, dir, 0.78);
+    P.ctx.globalAlpha = 1;
   }
 }
 

@@ -110,6 +110,7 @@ export class Hud {
     for (const st of this.stations) {
       const era = ERAS[eraIndexAt(st.x)];
       const root = el('div', `bb bb--${era.id}${st.secret ? ' bb--secret' : ''}`);
+      root.dataset.id = st.id;
       const screen = el('div', 'bb-screen');
       screen.append(el('p', 'bb-kicker', st.kicker), el('h3', 'bb-title', st.title));
       if (st.role) screen.append(el('p', 'bb-role', st.role));
@@ -165,46 +166,46 @@ export class Hud {
     }
   }
 
-  // The end of the road: a character sheet (class, facts, attributes filled by the skills
-  // collected), how much was explored and where to go next.
+  // The end of the road: a compact character sheet (class, facts, one bar per skill group),
+  // the score, the two doors as buttons and a quiet row of extras.
   endingCard() {
     const card = el('div', 'bb-ending');
     const sheet = el('div', 'sheet');
-    const portrait = el('img', 'sheet-portrait');
-    portrait.src = new URL('../art/web/bruno-2026-idle.webp', import.meta.url).href;
-    portrait.alt = '';
+    const portrait = el('div', 'sheet-portrait');
+    const face = el('img');
+    face.src = new URL('../art/web/bruno-2026-idle.webp', import.meta.url).href;
+    face.alt = '';
+    portrait.append(face);
     const head = el('div', 'sheet-head');
-    head.append(el('small', 'sheet-kicker', T.sheet), el('b', 'bb-level', T.endLevel(11, T.classes.head)));
-    const facts = el('ul', 'sheet-facts');
-    T.sheetFacts.forEach((f) => facts.append(el('li', '', f)));
-    head.append(facts);
+    head.append(el('b', 'bb-level', T.endLevel(11, T.classes.head)), el('p', 'sheet-facts', T.sheetFacts.join(' · ')));
     sheet.append(portrait, head);
     const attrs = el('ul', 'sheet-attrs');
-    for (const [group, name] of Object.entries(GROUP_NAMES)) {
+    for (const group of Object.keys(GROUP_NAMES)) {
       const total = this.skillList.filter((s) => s.group === group).length;
       if (!total) continue;
       const li = el('li');
       li.dataset.group = group;
       const bar = el('span', 'sheet-bar');
       bar.append(el('i'));
-      li.append(el('span', 'sheet-name', name), bar, el('b', 'sheet-n', `0/${total}`));
+      li.append(el('span', 'sheet-name', T.groupsShort[group]), bar);
       attrs.append(li);
     }
-    const stats = el('p', 'bb-stats');
-    const [a, b, c] = T.endStats;
     const total = this.stations.reduce((n, st) => n + st.skills.length, 0);
-    stats.append(a, el('b', 'bb-count', '0'), b(total), el('b', 'bb-achv', '0'), c(Object.keys(ACHIEVEMENTS).length));
-    const actions = el('div', 'bb-actions');
+    const stats = el('p', 'bb-stats');
+    stats.append(el('b', 'bb-count', '0'), `/${total} ${T.endStats[0]} · `, el('b', 'bb-achv', '0'), `/${Object.keys(ACHIEVEMENTS).length} ${T.endStats[1]}`);
+    const doors = el('div', 'bb-actions');
     const jobs = el('button', 'bb-btn primary', T.endJobs);
     jobs.dataset.panel = 'vagas';
     const projects = el('button', 'bb-btn primary', T.endProjects);
     projects.dataset.panel = 'projetos';
-    const mail = el('button', 'bb-btn', T.copyEmail);
+    doors.append(jobs, projects);
+    const extras = el('div', 'bb-extras');
+    const mail = el('button', '', T.copyEmail);
     mail.dataset.copy = 'contact@brunodemello.dev';
-    const wheel = el('button', 'bb-btn bb-wheel', T.endWheel);
-    const replay = el('button', 'bb-btn', T.endReplay);
+    const wheel = el('button', 'bb-wheel', T.endWheel);
+    const replay = el('button', '', T.endReplay);
     replay.addEventListener('click', () => this.handlers.onReplay());
-    const share = el('button', 'bb-btn', T.endShare);
+    const share = el('button', '', T.endShare);
     share.addEventListener('click', async () => {
       const url = location.href.split('?')[0];
       try {
@@ -218,8 +219,8 @@ export class Hud {
       }
     });
     [jobs, projects, mail, wheel, replay, share].forEach((b) => (b.type = 'button'));
-    actions.append(jobs, projects, mail, wheel, replay, share);
-    card.append(sheet, attrs, stats, actions);
+    extras.append(mail, wheel, replay, share);
+    card.append(sheet, attrs, stats, doors, extras);
     return card;
   }
 
@@ -229,7 +230,7 @@ export class Hud {
       const all = this.skillList.filter((s) => s.group === li.dataset.group);
       const got = all.filter((s) => this.unlocked.has(s.name)).length;
       li.querySelector('i').style.transform = `scaleX(${(got / all.length).toFixed(3)})`;
-      li.querySelector('.sheet-n').textContent = `${got}/${all.length}`;
+      li.title = `${GROUP_NAMES[li.dataset.group]} · ${got}/${all.length}`;
     }
   }
 

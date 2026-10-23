@@ -1076,16 +1076,16 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
 
 /* ---------- watch mode, contact nudge, copy e-mail ---------- */
 
+/* Under the name card, clear of the billboards hanging from the top. */
 .watch-bar {
   position: absolute;
-  left: 50%;
-  top: 64px;
+  left: 12px;
+  top: 90px;
   z-index: 13;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 6px 6px 6px 14px;
-  transform: translateX(-50%);
   background: var(--glass-strong);
   border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
   border-radius: 999px;
@@ -1119,6 +1119,7 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
 .nudge-actions button + button { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .nudge-close { position: absolute; right: 8px; top: 6px; padding: 4px 8px; background: none; border: 0; color: var(--muted); font-size: 14px; }
 @keyframes nudge-in { from { opacity: 0; transform: translateY(-12px) scale(0.95); } }
+@media (max-width: 720px) { .watch-bar { left: 50%; top: auto; bottom: calc(150px + var(--safe-bottom)); transform: translateX(-50%); } }
 /* On phones billboards dock at the top, but the nudge only shows with none open. */
 @media (max-width: 720px) { .nudge { top: 70px; padding: 12px 14px; } .nudge p { font-size: 14px; } }
 
@@ -1128,15 +1129,23 @@ dialog.panel::backdrop { background: rgba(5, 4, 12, 0.6); backdrop-filter: blur(
 
 /* ---------- character sheet (ending card) ---------- */
 
-.sheet { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.sheet-portrait { flex: none; width: 76px; height: 76px; object-fit: contain; object-position: bottom; background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%); border: 1px solid var(--line); border-radius: 10px; }
-.sheet-kicker { font-family: var(--pixel); font-size: 8px; color: var(--muted); }
-.sheet .bb-level { margin: 4px 0 6px; font-size: 17px; }
-.sheet-facts { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.sheet-facts li { padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--ink); }
-.sheet-attrs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 0 0 10px; padding: 0; list-style: none; }
-.sheet-attrs li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; font-size: 11px; }
-.sheet-name { font-family: var(--game); font-size: 12px; color: var(--muted); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sheet-n { font-family: var(--game); font-size: 12px; color: var(--ink); font-weight: 400; }
-.sheet-bar { grid-column: 1 / -1; height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+/* The office billboard: the sheet replaces the subtitle and the body text. */
+.bb[data-id='office'] .bb-role, .bb[data-id='office'] .bb-body { display: none; }
+.bb[data-id='office'] .bb-ending { margin-top: 10px; padding-top: 0; border-top: 0; }
+.sheet { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sheet-portrait { flex: none; width: 56px; height: 56px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 50%; background: radial-gradient(circle at 50% 70%, color-mix(in srgb, var(--accent) 35%, transparent), rgba(0, 0, 0, 0.3) 75%); }
+/* Head and shoulders of the 256-px idle pose (figure spans x 77–178, y 49–239). */
+.sheet-portrait img { display: block; width: 130px; max-width: none; margin: -18px 0 0 -37px; }
+.sheet .bb-level { margin: 0 0 2px; font-size: 16px; line-height: 1.25; }
+.sheet-facts { margin: 0; font-size: 13px; color: var(--muted); }
+.sheet-attrs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 12px; margin: 0 0 12px; padding: 0; list-style: none; }
+.sheet-attrs li { display: flex; flex-direction: column; gap: 3px; }
+.sheet-name { font-family: var(--game); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.sheet-bar { height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; }
 .sheet-bar i { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.6s ease; }
+.bb[data-id='office'] .bb-stats { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.bb[data-id='office'] .bb-stats b { font-size: 16px; }
+.bb[data-id='office'] .bb-actions { display: grid; grid-template-columns: 1fr 1fr; }
+.bb-extras { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin-top: 10px; }
+.bb-extras button { padding: 2px 0; background: none; border: 0; color: var(--muted); font-family: var(--game); font-size: 13px; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.25); text-underline-offset: 3px; }
+.bb-extras button:hover, .bb-extras button.copied { color: var(--accent); }
