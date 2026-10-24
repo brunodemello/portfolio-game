@@ -24,6 +24,55 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;700&family=VT323&display=swap">
   <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Bruno de Mello",
+    "url": "https://brunodemello.dev/",
+    "mainEntityOfPage": "https://brunodemello.dev/portfolio-game-v3/",
+    "jobTitle": "Tech Lead e responsável pelo desenvolvimento",
+    "description": "Desenvolvedor full stack com 11 anos de web, Tech Lead e responsável pelo setor de desenvolvimento de uma agência digital.",
+    "email": "mailto:contact@brunodemello.dev",
+    "worksFor": {
+      "@type": "Organization",
+      "name": "MktNow"
+    },
+    "alumniOf": {
+      "@type": "CollegeOrUniversity",
+      "name": "Unesp Bauru"
+    },
+    "knowsAbout": [
+      "React",
+      "JavaScript",
+      "Node.js",
+      "TypeScript",
+      "Next.js",
+      "Apache Cordova",
+      "iOS",
+      "PostgreSQL",
+      "MySQL",
+      "SQLite",
+      "Python",
+      "OCR",
+      "VTEX",
+      "Loja Integrada",
+      "APIs REST",
+      "Linux",
+      "Nginx",
+      "Liderança técnica",
+      "Inteligência artificial aplicada"
+    ],
+    "knowsLanguage": [
+      "pt-BR",
+      "en"
+    ],
+    "sameAs": [
+      "https://www.linkedin.com/in/bruno-de-mello-3264b5115/"
+    ],
+    "inLanguage": "pt-BR"
+  }
+  </script>
   <script>document.documentElement.classList.add('js');</script>
   <script type="module" src="js/main.js"></script>
 </head>
@@ -32,7 +81,7 @@
 
   <div id="app">
     <canvas id="screen" aria-hidden="true"></canvas>
-    <div id="billboards" aria-hidden="true"></div>
+    <div id="billboards"></div>
 
     <header class="hud-top">
       <div class="hud-id">
@@ -213,6 +262,7 @@
       <p class="role">Tabelas nutricionais encontradas automaticamente</p>
       <ul class="board"><li><span>PRODUTOS</span><span>187</span><span>LIDOS</span></li><li><span>IMAGENS</span><span>566</span><span>ANALISADAS</span></li><li><span>TABELAS</span><span>305</span><span>ACHADAS</span></li></ul>
       <p class="body">Um script em Python lê o catálogo pela API da Loja Integrada, passa OCR (Tesseract) em cada imagem e separa as que são tabelas nutricionais. O resultado vira um JSON que alimenta um botão com a tabela na página do produto: 143 produtos ganharam a tabela, substituindo parte da classificação manual das fotos.</p>
+      <p><a class="case" href="/pt/work/fitfood/">Ler o case completo</a></p>
     </article>
 
     <article class="station" data-id="personal" data-x="4520"
@@ -291,6 +341,7 @@
       <li data-skill="Python" data-code="PY" data-group="back"><b>Python</b> A aplicação do ClearDesk, piloto para organizar pedidos e orçamentos de uma operação de serviços.</li>
       </ul>
     </section>
+    <p>Bastidores: este jogo foi feito com IA sob a minha direção, com arte gerada pelo Codex e código escrito com agentes de IA (Claude Code e Codex). O código está no <a href="https://github.com/brunodemello/portfolio-game">GitHub</a>.</p>
   </main>
 
   <dialog class="wheel" id="skill-wheel" aria-labelledby="wheel-name">
@@ -365,7 +416,7 @@
       <ul class="works">
         <li><a href="/pt/work/tri-star/"><b>Tri-Star</b><span>App offline de inspeção usado em 3 aeroportos</span></a></li>
         <li><a href="/pt/work/urbes/"><b>URBES</b><span>App iOS de transporte público com back-end próprio</span></a></li>
-        <li><span class="work"><b>Fit Food</b><span>OCR achou 305 tabelas nutricionais em 566 imagens</span></span></li>
+        <li><a href="/pt/work/fitfood/"><b>Fit Food</b><span>OCR achou 305 tabelas nutricionais em 566 imagens</span></a></li>
         <li><a href="/pt/work/careeros/"><b>CareerOS</b><span>Produto próprio, construído de ponta a ponta</span></a></li>
         <li><a href="/pt/work/cleardesk/"><b>ClearDesk</b><span>Do pedido ao acompanhamento de orçamentos</span></a></li>
         <li><a href="/pt/work/dunder-labs/"><b>Labs</b><span>Time de agentes de IA com revisão humana</span></a></li>
@@ -382,6 +433,27 @@
         <button type="button" class="btn" data-copy="contact@brunodemello.dev">Copiar e-mail</button>
       </div>
       <p class="panel-mail">Ou escreva direto para <b>contact@brunodemello.dev</b></p>
+    </div>
+  </dialog>
+  <dialog class="panel" id="panel-bastidores" aria-labelledby="bastidores-title">
+    <div class="panel-inner">
+      <button type="button" class="panel-close" data-close>Voltar ao jogo ✕</button>
+      <p class="panel-kicker">BASTIDORES</p>
+      <h2 id="bastidores-title">Como este jogo foi feito</h2>
+      <p class="panel-lead">Este portfólio é, ele mesmo, um exemplo de como uso IA no trabalho: eu dirigi, e agentes de IA produziram boa parte da arte e do código.</p>
+      <h3>Quem fez o quê</h3>
+      <ul class="cv">
+        <li><b>Eu</b><p>o conceito, o roteiro da carreira, todo o conteúdo, as decisões de design e a revisão de cada versão antes de ir ao ar.</p></li>
+        <li><b>Arte</b><p>gerada com IA (Codex) a partir de briefs de estilo e, no caso do personagem, de fotos minhas: cenários, prédios e o Bruno em 6 fases, com caminhada, corrida e pulo.</p></li>
+        <li><b>Código</b><p>escrito com agentes de IA (Claude Code e Codex) sob a minha direção: motor em JavaScript puro e canvas 2D, sem bibliotecas.</p></li>
+      </ul>
+      <h3>Como foi o processo</h3>
+      <p>Ciclos curtos: ideia, implementação, teste no navegador (desktop e celular) e publicação. Cada versão vai para uma pasta nova no servidor, os arquivos no ar são conferidos byte a byte e a anterior fica pronta para voltar. Foram mais de 15 publicações em dois dias.</p>
+      <h3>O que isso mostra</h3>
+      <p>Saber dividir o trabalho com IA: definir o que construir, dar o contexto certo, revisar com critério e não abrir mão da qualidade. É esse uso de IA que levo para o desenvolvimento na agência.</p>
+      <div class="panel-actions">
+        <a class="btn" href="https://github.com/brunodemello/portfolio-game" target="_blank" rel="noopener">Ver o código no GitHub</a>
+      </div>
     </div>
   </dialog>
 </body>

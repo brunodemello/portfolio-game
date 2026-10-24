@@ -1162,6 +1162,13 @@ window.addEventListener('resize', resize);
 resize();
 requestAnimationFrame(frame);
 
+// Direct links for applications: ?cv opens the jobs panel, ?projeto (or ?project) the
+// projects panel and ?assistir (or ?watch) starts watch mode.
+const params = new URLSearchParams(location.search);
+if (params.has('cv')) openPanel('vagas');
+else if (params.has('projeto') || params.has('project')) openPanel('projetos');
+else if (params.has('assistir') || params.has('watch')) startTour();
+
 // Debug/QA hook: lets automated checks jump around the world.
 window.__game = { player, world, followers, hud, tour: () => tour, save: () => writeSave(), travelTo: (x) => travelTo(x, 2000), teleport: (x) => { player.x = x; camX = x - 120; },
   // Advances the game by fixed frames, for checks in a throttled background tab.

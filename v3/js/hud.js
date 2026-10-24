@@ -113,6 +113,10 @@ export class Hud {
       const era = ERAS[eraIndexAt(st.x)];
       const root = el('div', `bb bb--${era.id}${st.secret ? ' bb--secret' : ''}`);
       root.dataset.id = st.id;
+      // Only the open billboard is exposed to screen readers and the keyboard; the text
+      // version below the game carries every milestone anyway.
+      root.inert = true;
+      root.setAttribute('aria-hidden', 'true');
       const screen = el('div', 'bb-screen');
       screen.append(el('p', 'bb-kicker', st.kicker), el('h3', 'bb-title', st.title));
       if (st.role) screen.append(el('p', 'bb-role', st.role));
@@ -215,8 +219,10 @@ export class Hud {
     replay.addEventListener('click', () => this.handlers.onReplay());
     const share = el('button', '', T.endShare);
     share.addEventListener('click', () => this.share(share));
-    [jobs, projects, mail, wheel, replay, share].forEach((b) => (b.type = 'button'));
-    extras.append(mail, wheel, replay, share);
+    const making = el('button', '', T.endMaking);
+    making.dataset.panel = 'bastidores';
+    [jobs, projects, mail, wheel, replay, share, making].forEach((b) => (b.type = 'button'));
+    extras.append(mail, wheel, making, replay, share);
     card.append(sheet, attrs, stats, doors, extras);
     return card;
   }
@@ -377,6 +383,8 @@ export class Hud {
       if (open !== b.open) {
         b.open = open;
         b.root.classList.toggle('is-open', open);
+        b.root.inert = !open;
+        b.root.setAttribute('aria-hidden', String(!open));
         if (open) {
           b.typed = reduced ? b.st.body.length : 0;
           b.body.textContent = b.st.body.slice(0, b.typed);
